@@ -1,8 +1,7 @@
-package com.ecommerce.user.handler;
+package com.ecommerce.search_service.handler;
 
 
 
-import com.ecommerce.user.exception.*;
 import com.ecommerce.user.model.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindingResult;

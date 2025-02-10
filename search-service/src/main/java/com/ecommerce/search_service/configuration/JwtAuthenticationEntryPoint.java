@@ -1,4 +1,4 @@
-package com.ecommerce.user.configuration;
+package com.ecommerce.search_service.configuration;
 
 import com.ecommerce.user.exception.ErrorCode;
 import com.ecommerce.user.model.response.ApiResponse;

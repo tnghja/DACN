@@ -11,11 +11,13 @@ import com.ecommerce.user.model.response.UpdateUserProfileResponse;
 import com.ecommerce.user.model.response.UserInfoResponse;
 import com.ecommerce.user.model.response.UserProfileCreateResponse;
 import com.ecommerce.user.service.UserService;
+import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,19 +26,21 @@ import java.util.List;
 @RequiredArgsConstructor
 //@RequestMapping("/user")
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
+@Validated
 public class UserController {
 
     UserService userService;
 
     @PostMapping("/create")
-    public ResponseEntity<UserProfileCreateResponse> createUserProfile(@RequestBody UserProfileCreateRequest userCreateRequest) {
+    public ResponseEntity<UserProfileCreateResponse> createUserProfile(@Valid @RequestBody UserProfileCreateRequest userCreateRequest) {
+        System.out.println(userCreateRequest.toString());
         UserProfileCreateResponse userCreateResponse = userService.createUserProfile(userCreateRequest);
         return new ResponseEntity<>(userCreateResponse, HttpStatus.CREATED);
     }
 
     @PutMapping("/update-profile")
     public ApiResponse<UpdateUserProfileResponse> updateUserProfile(
-            @RequestParam("userId") Long userId,
+            @RequestParam("userId") String userId,
             @RequestBody UpdateUserProfileRequest request) {
 
         UpdateUserProfileResponse updatedUser = userService.updateUserProfile(userId, request);
@@ -47,7 +51,7 @@ public class UserController {
 
     @PostMapping("/{userId}/add-address")
     public ApiResponse<Address> addAddressToUser(
-            @PathVariable Long userId,
+            @PathVariable String userId,
             @RequestBody AddressCreateRequest request) {
 
         Address savedAddress = userService.addAddressToUser(userId, request);
@@ -57,7 +61,7 @@ public class UserController {
     }
 
     @GetMapping("/{userId}/addresses")
-    public ApiResponse<List<Address>> getUserAddresses(@PathVariable Long userId) {
+    public ApiResponse<List<Address>> getUserAddresses(@PathVariable String userId) {
         List<Address> addresses = userService.getAddress(userId);
         ApiResponse<List<Address>> response = new ApiResponse<>();
         response.ok(addresses);
@@ -65,7 +69,7 @@ public class UserController {
     }
 
     @GetMapping("/{userId}")
-    public ApiResponse<UserInfoResponse> getUser(@PathVariable Long userId) {
+    public ApiResponse<UserInfoResponse> getUser(@PathVariable String userId) {
         UserInfoResponse userResponse = userService.getUser(userId);
         ApiResponse<UserInfoResponse> response = new ApiResponse<>();
         response.ok(userResponse);
