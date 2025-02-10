@@ -11,7 +11,7 @@ import java.util.Set;
 @Builder
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserProfileCreateResponse {
-    String id;
+//    String id;
     String userName;
     String email;
 }

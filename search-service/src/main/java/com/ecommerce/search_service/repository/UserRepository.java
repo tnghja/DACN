@@ -1,4 +1,4 @@
-package com.ecommerce.user.repository;
+package com.ecommerce.search_service.repository;
 
 
 import com.ecommerce.user.model.entity.User;
