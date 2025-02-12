@@ -1,5 +1,7 @@
 package com.ecommerce.search_service.model.response;
 
+import lombok.*;
+
 import java.util.Map;
 
 @Setter

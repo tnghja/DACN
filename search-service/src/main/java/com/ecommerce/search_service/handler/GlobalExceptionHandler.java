@@ -2,7 +2,8 @@ package com.ecommerce.search_service.handler;
 
 
 
-import com.ecommerce.user.model.response.ApiResponse;
+import com.ecommerce.search_service.exception.ValidationException;
+import com.ecommerce.search_service.model.response.ApiResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -12,11 +13,10 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-
+import com.ecommerce.search_service.exception.*;
 @RestControllerAdvice
 public class  GlobalExceptionHandler {
 
