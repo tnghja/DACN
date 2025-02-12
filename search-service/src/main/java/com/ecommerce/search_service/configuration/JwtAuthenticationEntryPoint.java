@@ -1,8 +1,8 @@
 package com.ecommerce.search_service.configuration;
 
-import com.ecommerce.user.exception.ErrorCode;
-import com.ecommerce.user.model.response.ApiResponse;
-import com.ecommerce.user.model.response.StatusEnum;
+import com.ecommerce.search_service.exception.ErrorCode;
+import com.ecommerce.search_service.model.response.ApiResponse;
+import com.ecommerce.search_service.model.response.StatusEnum;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

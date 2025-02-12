@@ -1,7 +1,7 @@
 package com.ecommerce.search_service.configuration;
 
-import com.ecommerce.user.configuration.CustomJwtDecoder;
-import com.ecommerce.user.configuration.JwtAuthenticationEntryPoint;
+import com.ecommerce.search_service.configuration.CustomJwtDecoder;
+import com.ecommerce.search_service.configuration.JwtAuthenticationEntryPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
