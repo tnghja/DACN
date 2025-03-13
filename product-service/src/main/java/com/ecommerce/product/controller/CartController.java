@@ -10,7 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/cart")
+@RequestMapping("api/carts")
 @RequiredArgsConstructor
 public class CartController {
 
@@ -24,34 +24,48 @@ public class CartController {
         return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/create/{studentId}")
-    public ResponseEntity<ApiResponse<Cart>> createCart(@PathVariable Long studentId) {
-        Cart cart = cartService.createCart(studentId);
-        ApiResponse<Cart> response = new ApiResponse<>();
-        response.ok(cart);
-        return ResponseEntity.ok(response);
-    }
+//    @PostMapping("/create/{userId}")
+//    public ResponseEntity<ApiResponse<Cart>> createCart(@PathVariable Long userId) {
+//        Cart cart = cartService.createCart(userId);
+//        ApiResponse<Cart> response = new ApiResponse<>();
+//        response.ok(cart);
+//        return ResponseEntity.ok(response);
+//    }
 
     @PostMapping("/{userId}/add/{productId}/{quantity}")
-    public ResponseEntity<Void> addProduct(@PathVariable Long userId,
-                                           @PathVariable Long productId,
-                                           @PathVariable Long quantity) {
+    public ResponseEntity<ApiResponse<Void>> addProduct(@PathVariable Long userId,
+                                           @PathVariable String productId,
+                                           @PathVariable Integer quantity) {
         cartService.addProductToCart(userId, productId, quantity);
-        return ResponseEntity.ok().build();
-    }
-
-
-    @DeleteMapping("/{userId}/remove/{courseId}")
-    public ResponseEntity<ApiResponse<Void>> removeProduct(@PathVariable Long userId, @PathVariable Long courseId) {
-        cartService.deleteProductFromCart(userId, courseId);
         ApiResponse<Void> response = new ApiResponse<>();
         response.ok();
         return ResponseEntity.ok(response);
     }
 
+
+//    @DeleteMapping("/{userId}/remove/{courseId}")
+//    public ResponseEntity<ApiResponse<Void>> removeProduct(@PathVariable Long userId, @PathVariable String productId) {
+//        cartService.deleteProductFromCart(userId, productId);
+//        ApiResponse<Void> response = new ApiResponse<>();
+//        response.ok();
+//        return ResponseEntity.ok(response);
+//    }
+//
     @DeleteMapping("/{userId}/clear")
     public ResponseEntity<ApiResponse<Void>> clearCart(@PathVariable Long userId) {
-        cartService.deleteAllCourseFromCart(userId);
+        cartService.deleteAllProductFromCart(userId);
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.ok();
+        return ResponseEntity.ok(response);
+    }
+
+    @PutMapping("/{userId}/update/{productId}")
+    public ResponseEntity<ApiResponse<Void>> updateProductQuantity(
+            @PathVariable Long userId,
+            @PathVariable String productId,
+            @RequestParam Integer quantity) {
+
+        cartService.updateProductQuantityInCart(userId, productId, quantity);
         ApiResponse<Void> response = new ApiResponse<>();
         response.ok();
         return ResponseEntity.ok(response);

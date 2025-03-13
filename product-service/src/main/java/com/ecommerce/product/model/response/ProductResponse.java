@@ -1,6 +1,7 @@
 package com.ecommerce.product.model.response;
 
 import com.ecommerce.product.model.entity.CartItem;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -9,10 +10,10 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ProductResponse {
-    private Long productId;
+    private String productId;
     private String name;
     private Double price;
-    private Long quantity; // Add quantity here
+    private Integer quantity; // Add quantity here
 
     // Convert from CartItem instead of Product
     public static ProductResponse fromEntity(CartItem cartItem) {

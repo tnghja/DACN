@@ -6,6 +6,7 @@ import com.ecommerce.product.model.dto.ProductDTO;
 import com.ecommerce.product.model.entity.Category;
 import com.ecommerce.product.model.entity.Product;
 import com.ecommerce.product.model.mapper.ProductMapper;
+import com.ecommerce.product.model.request.ImageUploadRequest;
 import com.ecommerce.product.model.request.ProductCreateRequest;
 import com.ecommerce.product.model.request.ProductUpdateRequest;
 import com.ecommerce.product.repository.CategoryRepository;
@@ -51,12 +52,13 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public Optional<ProductDTO> getProductById(Long id) {
+    public Optional<ProductDTO> getProductById(String id) {
         return productRepository.findById(id).map(productMapper::toDTO);
     }
 
-        @Override
-        public ProductDTO createProduct(ProductCreateRequest productCreateRequest) {
+    @Override
+    public ProductDTO createProduct(ProductCreateRequest productCreateRequest) {
+
             Product product = productMapper.toEntity(productCreateRequest);
 
             Category category = categoryRepository.findById(productCreateRequest.getCategoryId())
@@ -66,16 +68,18 @@ public class ProductServiceImpl implements ProductService {
 
             Product createdProduct = productRepository.save(product);
             return productMapper.toDTO(createdProduct);
-        }
+
+
+    }
 
     @Override
-    public Optional<ProductDTO> updateProduct(Long id, ProductUpdateRequest productUpdateRequest) {
+    public Optional<ProductDTO> updateProduct(String id, ProductUpdateRequest productUpdateRequest) {
         return productRepository.findById(id).map(existingProduct -> {
             Product updatedProduct = productMapper.toEntity(productUpdateRequest);
 
             // Preserve the existing ID, reviews, and deleteAt fields
             updatedProduct.setId(existingProduct.getId());
-            updatedProduct.setReviews(existingProduct.getReviews());
+//            updatedProduct.setReviews(existingProduct.getReviews());
             updatedProduct.setDeleteAt(existingProduct.getDeleteAt());
 
             Product savedProduct = productRepository.save(updatedProduct);
@@ -84,7 +88,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
-    public boolean deleteProduct(Long id) {
+    public boolean deleteProduct(String id) {
         return productRepository.findById(id).map(product -> {
             // Mark the product as deleted by setting `deleteAt` timestamp
             product.setDeleteAt(java.time.LocalDateTime.now());
@@ -94,23 +98,28 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Async
-    public void uploadImagesAndAssignToProductAsync(Long productId, List<MultipartFile> files) {
-        files.forEach(file -> CompletableFuture.runAsync(() -> {
+    public void uploadImagesAndAssignToProductAsync(String productId, List<ImageUploadRequest> imageRequests) {
+        imageRequests.forEach(image -> CompletableFuture.runAsync(() -> {
             try {
-                String imageUrl = cloudinaryService.uploadImage(file); // Upload image
-                updateProductWithImage(productId, imageUrl); // Update product
+                String imageUrl = cloudinaryService.uploadImage(image.getFileData(), image.getFileName()); // Upload image
+                updateProductWithImage(productId, imageUrl); // Update product with image URL
             } catch (IOException | InvalidFileTypeException e) {
-                // Log error for debugging
                 System.err.println("Error uploading image for productId " + productId + ": " + e.getMessage());
             }
         }));
     }
 
-    private void updateProductWithImage(Long productId, String imageUrl) {
-        productRepository.findById(productId).ifPresent(product -> {
-            product.getImages().add(imageUrl);
-            productRepository.save(product); // Save updated product
-        });
+
+    private void updateProductWithImage(String productId, String imageUrl) {
+
+        Product product = productRepository.findByProductId(productId);
+
+        product.getImages().add(imageUrl);
+        productRepository.save(product); // Save updated product
+
+
     }
+
+
 
 }

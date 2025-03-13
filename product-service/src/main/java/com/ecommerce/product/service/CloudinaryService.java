@@ -15,4 +15,5 @@ public interface CloudinaryService {
     String updateVideo(String publicId, MultipartFile file) throws IOException, InvalidFileTypeException;
     String updateImage(String publicId, MultipartFile file) throws IOException, InvalidFileTypeException;
     String deleteFile(String publicId) throws IOException;
+    public String uploadImage(byte[] fileData, String fileName) throws IOException, InvalidFileTypeException;
 }

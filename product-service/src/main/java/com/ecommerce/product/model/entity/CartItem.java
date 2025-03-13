@@ -26,5 +26,5 @@ public class CartItem {
     @JoinColumn(name = "product_id")
     private Product product;
 
-    private Long quantity; // Thêm số lượng sản phẩm
+    private Integer quantity; // Thêm số lượng sản phẩm
 }

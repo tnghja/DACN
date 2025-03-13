@@ -2,10 +2,7 @@ package com.ecommerce.product.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.util.List;
 
@@ -27,5 +24,6 @@ public class Cart {
     private User customer;
 
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+    @ToString.Exclude
     private List<CartItem> cartItems; // Thay thế ManyToMany bằng List<CartItem>
 }

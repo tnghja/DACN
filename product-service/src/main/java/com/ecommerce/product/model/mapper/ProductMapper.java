@@ -13,8 +13,8 @@ public interface ProductMapper {
 
     ProductMapper INSTANCE = Mappers.getMapper(ProductMapper.class);
 
-    @Mapping(source = "category.id", target = "categoryId")
-    @Mapping(source = "images", target = "imageUrls") // Correct target field for category mapping
+    @Mapping(target = "categoryId", expression = "java(product.getCategory().getId() != null ? product.getCategory().getId() : null)")
+//    @Mapping(target = "imageUrls", expression = "java(product.getImages().stream().map(Image::getUrl).toList())") // Correct target field for category mapping
     ProductDTO toDTO(Product product);
 
     @Mapping(source = "categoryId", target = "category.id")

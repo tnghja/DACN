@@ -7,7 +7,7 @@ import java.util.List;
 
 @Data
 public class ProductDTO {
-    private Long id;
+    private String id;
     private String name;
     private String brand;
     private String cover;

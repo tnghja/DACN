@@ -12,6 +12,7 @@ import java.util.Date;
 @Data
 @Entity
 @Setter
+@Table(name = "orders")
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,10 +24,10 @@ public class Order {
     private String shipCode;
     private Date orderDate;
     private Double totalPrice;
+    private PaymentStatus status;
     @ManyToOne
     @JoinColumn(name = "customer_id")
     private User customer;
-
     @OneToOne
     @JoinColumn(name = "user_payment_id")
     private UserPayment userPayment;

@@ -9,6 +9,7 @@ import com.ecommerce.product.exception.ApplicationException;
 import com.ecommerce.product.exception.NotFoundException;
 import com.ecommerce.product.exception.ValidationException;
 import com.ecommerce.product.model.entity.*;
+import com.ecommerce.product.model.response.CartItemResponse;
 import com.ecommerce.product.model.response.CartResponse;
 import com.ecommerce.product.model.response.ProductResponse;
 import com.ecommerce.product.repository.*;
@@ -71,17 +72,18 @@ public class CartServiceImpl implements CartService {
 
 
     @Override
-    public Product addProductToCart(Long userId, Long productId, Long quantity) {
+    public Product addProductToCart(Long userId, String productId, Integer quantity) {
         try {
-            // Kiểm tra sản phẩm có tồn tại không
             Product product = productRepository.findById(productId)
                     .orElseThrow(() -> new NotFoundException("Product not found with ID: " + productId));
 
-            // Kiểm tra user có tồn tại không
+            if (product.getQuantity() < quantity) {
+                throw new ValidationException("Not enough stock for product ID: " + productId);
+            }
+
             User user = userRepository.findById(userId)
                     .orElseThrow(() -> new NotFoundException("User not found with ID: " + userId));
 
-            // Kiểm tra user có giỏ hàng hay chưa, nếu chưa thì tạo mới
             Cart cart = cartRepository.findByCustomer_Id(userId)
                     .orElseGet(() -> {
                         Cart newCart = new Cart();
@@ -90,15 +92,16 @@ public class CartServiceImpl implements CartService {
                         return cartRepository.save(newCart);
                     });
 
-            // Kiểm tra sản phẩm có trong giỏ hàng chưa
             CartItem cartItem = cartItemRepository.findByCartAndProduct(cart, product)
                     .orElse(null);
 
             if (cartItem != null) {
-                // Nếu đã tồn tại → Tăng số lượng lên 1
-                cartItem.setQuantity(cartItem.getQuantity() + 1);
+                int newQuantity = cartItem.getQuantity() + quantity;
+                if (newQuantity > product.getQuantity()) {
+                    throw new ValidationException("Not enough stock for product ID: " + productId);
+                }
+                cartItem.setQuantity(newQuantity);
             } else {
-                // Nếu chưa có → Tạo mới với số lượng = 1
                 cartItem = new CartItem();
                 cartItem.setCart(cart);
                 cartItem.setProduct(product);
@@ -106,9 +109,7 @@ public class CartServiceImpl implements CartService {
             }
 
             cartItemRepository.save(cartItem);
-
-            // Cập nhật tổng giá trị giỏ hàng
-            cart.setTotal(cart.getTotal() + product.getPrice());
+            cart.setTotal(cart.getTotal() + (product.getPrice() * quantity));
             cartRepository.save(cart);
 
             return product;
@@ -118,6 +119,7 @@ public class CartServiceImpl implements CartService {
             throw new ApplicationException(ex.getMessage());
         }
     }
+
 
 
 //    public CartResponse getById(Long cartId) {
@@ -132,18 +134,19 @@ public class CartServiceImpl implements CartService {
         Cart cart = cartRepository.findByCustomer_Id(userId)
                 .orElseThrow(() -> new NotFoundException("Cart not found"));
 
-        // Convert CartItem list to ProductResponse
-        List<ProductResponse> productResponses = cart.getCartItems().stream()
-                .map(ProductResponse::fromEntity) // Now correctly maps quantity
+        // Chuyển danh sách CartItem thành danh sách CartItemResponse
+        List<CartItemResponse> cartItems = cart.getCartItems().stream()
+                .map(CartItemResponse::fromEntity)
                 .toList();
 
         return new CartResponse(
                 cart.getCartId(),
                 cart.getCustomer().getId(),
                 cart.getTotal(),
-                productResponses
+                cartItems
         );
-}
+    }
+
     @Transactional
     public void copyCartToOrder(Long userId) {
         try {
@@ -205,7 +208,7 @@ public class CartServiceImpl implements CartService {
 //    }
 
     @Override
-    public void deleteProductFromCart(Long userId, Long productId) {
+    public void deleteProductFromCart(Long userId, String productId) {
         // Validate product existence
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new NotFoundException("Product not found with ID: " + productId));
@@ -231,12 +234,12 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    public void deleteAllCourseFromCart(Long userId) {
+    public void deleteAllProductFromCart(Long userId) {
             User user = userRepository.findById(userId).orElseThrow(() -> new NotFoundException("User not found with ID: " + userId));
 
             // Check cart is created or not
             Cart cart = cartRepository.findByCustomer_Id(userId).orElseThrow(() -> new NotFoundException("Cart doesn't exist for userId: " + userId));
-
+            cart.setTotal(0.0);
             cartItemRepository.deleteCartItemsById(cart.getCartId());
     }
 
@@ -251,12 +254,12 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new ValidationException("Cart doesn't exist for studentId: " + userId));
 
         // Delete all cart items first
-        deleteAllCourseFromCart(userId);
+        deleteAllProductFromCart(userId);
 
         // Delete the cart
         cartRepository.delete(cart);
     }
-    public void deleteListCourseFromCart(Long userId, List<Long> productIds) {
+    public void deleteListProductFromCart(Long userId, List<String> productIds) {
         // Validate student existence
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("Student not found with ID: " + userId));
@@ -266,7 +269,7 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new ValidationException("Cart doesn't exist for studentId: " + userId));
 
         // Iterate through the courses to delete
-        for (Long productId : productIds) {
+        for (String productId : productIds) {
             Product product = productRepository.findById(productId)
                     .orElseThrow(() -> new NotFoundException("Course not found with ID: " + productId));
 
@@ -279,6 +282,37 @@ public class CartServiceImpl implements CartService {
         }
 
         // Update total price after removing items
+        cart.setTotal(cartItemRepository.calculateTotalPrice(cart.getCartId()));
+        cartRepository.save(cart);
+    }
+
+    @Transactional
+    public void updateProductQuantityInCart(Long userId, String productId, Integer quantity) {
+        // Kiểm tra sản phẩm có tồn tại không
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new NotFoundException("Product not found with ID: " + productId));
+
+        // Kiểm tra user có tồn tại không
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found with ID: " + userId));
+
+        // Kiểm tra user có giỏ hàng hay chưa
+        Cart cart = cartRepository.findByCustomer_Id(userId)
+                .orElseThrow(() -> new NotFoundException("Cart not found for userId: " + userId));
+
+        // Kiểm tra sản phẩm có trong giỏ hàng không
+        CartItem cartItem = cartItemRepository.findByCartAndProduct(cart, product)
+                .orElseThrow(() -> new NotFoundException("Product not found in cart with ID: " + productId));
+
+        // Kiểm tra số lượng hợp lệ
+        if (quantity <= 0) {
+            cartItemRepository.delete(cartItem); // Nếu số lượng <= 0, xóa khỏi giỏ hàng
+        } else {
+            cartItem.setQuantity(quantity);
+            cartItemRepository.save(cartItem);
+        }
+
+        // Cập nhật tổng giá trị giỏ hàng
         cart.setTotal(cartItemRepository.calculateTotalPrice(cart.getCartId()));
         cartRepository.save(cart);
     }

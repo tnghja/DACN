@@ -13,5 +13,5 @@ public class CartResponse {
     private Long cartId;
     private Long userId;
     private Double total;
-    private List<ProductResponse> products; // Now includes quantity per product
+    private List<CartItemResponse> products; // Now includes quantity per product
 }

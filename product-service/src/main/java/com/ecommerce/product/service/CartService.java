@@ -7,15 +7,19 @@ import com.ecommerce.product.model.response.CartResponse;
 public interface CartService {
     Cart getCartById(Long userId);
 
-    Cart createCart(Long studentId);
+    Cart createCart(Long userId);
 
-    Product addProductToCart(Long userId, Long productId, Long quantity);
+    Product addProductToCart(Long userId, String productId, Integer quantity);
 
-    CartResponse getCartByUserId(Long studentId);
+    CartResponse getCartByUserId(Long userId);
 
-    void deleteProductFromCart(Long studentId, Long courseId);
+    void deleteProductFromCart(Long userId, String productId);
 
-    void deleteAllCourseFromCart(Long userId);
+    void deleteAllProductFromCart(Long userId);
 
     void deleteCart(Long userId);
+
+    void copyCartToOrder(Long userId);
+
+    void updateProductQuantityInCart(Long userId, String productId, Integer quantity);
 }

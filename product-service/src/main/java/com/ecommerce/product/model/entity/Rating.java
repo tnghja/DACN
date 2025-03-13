@@ -1,7 +1,5 @@
 package com.ecommerce.product.model.entity;
 
-import com.ecommerce.product.model.entity.Product;
-import com.ecommerce.product.model.entity.User;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,13 +13,13 @@ import java.time.LocalDateTime;
 @Builder
 @Data
 @Entity
-public class Review {
+public class Rating {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String content;
-    private Double rate;
+    private Integer rate;
     private LocalDateTime createAt;
 
     @ManyToOne

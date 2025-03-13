@@ -17,6 +17,14 @@ public class CloudinaryServiceImpl implements CloudinaryService {
 
     @Autowired
     private Cloudinary cloudinary;
+    public String uploadImage(byte[] fileData, String fileName) throws IOException, InvalidFileTypeException {
+        FileValidation.validateImageType(fileName);
+        Map uploadResult = cloudinary.uploader().upload(fileData, ObjectUtils.asMap(
+                "resource_type", "raw"
+        ));
+        return uploadResult.get("url").toString();
+    }
+
     public String uploadFile(byte[] file) throws IOException, InvalidFileTypeException {
         Map uploadResult = cloudinary.uploader().upload(file, ObjectUtils.asMap("resource_type", "video"));
         return uploadResult.get("url").toString();
@@ -72,4 +80,5 @@ public class CloudinaryServiceImpl implements CloudinaryService {
         ));
         return uploadResult.get("url").toString();
     }
+
 }

@@ -1,5 +1,6 @@
 package com.ecommerce.product.model.entity;
 
+import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
@@ -13,6 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
+@DiscriminatorValue(value = UserRole.Role.CUSTOMER)
 public class Customer extends User {
     @OneToMany(mappedBy = "customer") // Matches the field in Cart
     private List<Cart> carts;
@@ -24,6 +26,6 @@ public class Customer extends User {
     private List<Product> products;
 
     @OneToMany(mappedBy = "customer") // Matches the field in Review
-    private List<Review> reviews;
+    private List<Rating> reviews;
 }
 

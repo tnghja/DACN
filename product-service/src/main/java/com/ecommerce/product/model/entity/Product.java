@@ -6,10 +6,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDateTime;
 import java.util.List;
-
+import java.util.UUID;
+@EntityListeners(com.ecommerce.product.listener.ProductEntityListener.class)
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -18,9 +20,12 @@ import java.util.List;
 public class Product {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
+    @Column(nullable = false, updatable = false)
+    private String id;
+    @PrePersist
+    public void generateId() {
+        this.id = "S" + UUID.randomUUID().toString().replace("-", "").substring(0, 11);
+    }
     private String name;
     private String brand;
     private String cover;
@@ -34,7 +39,7 @@ public class Product {
     private List<String> images; // Danh sách đường dẫn ảnh
     @JsonIgnore // Bỏ qua trường này khi serialize
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Review> reviews;
+    private List<Rating> ratings;
 
 
     @ManyToOne
