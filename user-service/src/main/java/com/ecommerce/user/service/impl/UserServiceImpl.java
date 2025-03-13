@@ -9,6 +9,7 @@ import com.ecommerce.user.model.mapper.AddressMapper;
 import com.ecommerce.user.model.mapper.UserMapper;
 import com.ecommerce.user.model.request.AddressCreateRequest;
 import com.ecommerce.user.model.request.UpdateUserProfileRequest;
+
 import com.ecommerce.user.model.response.UpdateUserProfileResponse;
 import com.ecommerce.user.model.response.UserProfileCreateResponse;
 
@@ -19,11 +20,9 @@ import com.ecommerce.user.repository.AddressRepository;
 import com.ecommerce.user.repository.UserRepository;
 import com.ecommerce.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -36,8 +35,6 @@ public class UserServiceImpl implements UserService {
     @Autowired
     AddressMapper addressMapper;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
     @Override
     public UserProfileCreateResponse createUserProfile(UserProfileCreateRequest userCreateRequest) {
         // Check for existing email or username
@@ -48,11 +45,10 @@ public class UserServiceImpl implements UserService {
         if (userRepository.existsByUserName(userCreateRequest.getUserName())) {
             throw new ApplicationException("This username already exists");
         }
-        String userId = UUID.randomUUID().toString();
-        userCreateRequest.setPassword(passwordEncoder.encode(userCreateRequest.getPassword()));
+        userCreateRequest.setName("11111");
         // Create new user entity
         User newUser = userMapper.toEntity(userCreateRequest);
-        newUser.setUserId(userId);
+
         try {
             // Save new user in the repository
             userRepository.save(newUser);
@@ -60,19 +56,20 @@ public class UserServiceImpl implements UserService {
             return userMapper.toUserCreateResponse(newUser);
         } catch (Exception ex) {
 
-            throw new ApplicationException("Error creating user profile: " + ex.getMessage());
+            throw new ApplicationException("Error creating user profile" + ex.getMessage());
         }
     }
 
 
-    public UpdateUserProfileResponse updateUserProfile(String userId, UpdateUserProfileRequest request) {
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found"));
+    public UpdateUserProfileResponse updateUserProfile(Long userId, UpdateUserProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User with ID " + userId + " not found"));
 
         // Update user profile based on request
         user.setFullName(request.getFullName());
         user.setGender(request.getGender());
         user.setPhoneNumber(request.getPhoneNumber());
+        user.setEmail(request.getEmail());
         user.setDateOfBirth(request.getDateOfBirth());
 
         // Save updated user
@@ -82,10 +79,10 @@ public class UserServiceImpl implements UserService {
         return userMapper.toUpdateUserProfileResponse(user);
     }
 
-    public Address addAddressToUser(String userId, AddressCreateRequest request) {
+    public Address addAddressToUser(Long userId, AddressCreateRequest request) {
         // Tìm người dùng theo userId
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("User with id " + userId + " not found"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User with ID " + userId + " not found"));
 
         // Sử dụng AddressMapper để ánh xạ từ AddressCreateRequest sang Address
         Address newAddress = addressMapper.toEntity(request);
@@ -97,19 +94,19 @@ public class UserServiceImpl implements UserService {
         return addressRepository.save(newAddress);
     }
 
-    public List<Address> getAddress(String userId) {
+    public List<Address> getAddress(Long userId) {
         // Tìm người dùng theo userId
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("User with userId " + userId + " not found"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User with ID " + userId + " not found"));
 
         // Trả về danh sách địa chỉ của người dùng
         return user.getAddresses();
     }
 
-    public UserInfoResponse getUser(String userId) {
+    public UserInfoResponse getUser(Long userId) {
         // Tìm người dùng theo userId
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new NotFoundException("User with name " + userId + " not found"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User with ID " + userId + " not found"));
 
         // Sử dụng UserMapper để ánh xạ từ User entity sang UserResponse DTO
         return userMapper.toUserInfoResponse(user);

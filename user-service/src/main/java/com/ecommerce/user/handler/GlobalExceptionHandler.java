@@ -60,6 +60,19 @@ public class  GlobalExceptionHandler {
         return apiResponse;
     }
 
+    @ExceptionHandler(ApplicationException.class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ResponseBody
+    public ApiResponse handleApplicationException(ApplicationException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("errorCode", "500");
+        error.put("errorMessage", ex.getMessage());
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.error(error);
+        return apiResponse;
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ResponseBody
@@ -77,20 +90,6 @@ public class  GlobalExceptionHandler {
         apiResponse.error(error);
         return apiResponse;
     }
-    @ExceptionHandler(ApplicationException.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    @ResponseBody
-    public ApiResponse handleApplicationException(ApplicationException ex) {
-        Map<String, String> error = new HashMap<>();
-        error.put("errorCode", "500");
-        error.put("errorMessage", ex.getMessage());
-
-        ApiResponse apiResponse = new ApiResponse();
-        apiResponse.error(error);
-        return apiResponse;
-    }
-
-
 
     @ExceptionHandler(IOException.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
