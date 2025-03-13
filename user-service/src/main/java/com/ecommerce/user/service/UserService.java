@@ -13,10 +13,10 @@ import java.util.List;
 
 public interface UserService {
     UserProfileCreateResponse createUserProfile(UserProfileCreateRequest userProfileCreateRequest);
-    UpdateUserProfileResponse updateUserProfile(String userId, UpdateUserProfileRequest request);
-    Address addAddressToUser(String userId, AddressCreateRequest addressCreateRequest);
+    UpdateUserProfileResponse updateUserProfile(Long userId, UpdateUserProfileRequest request);
+    Address addAddressToUser(Long userId, AddressCreateRequest addressCreateRequest);
 
-    List<Address> getAddress(String userId);
+    List<Address> getAddress(Long userId);
 
-    UserInfoResponse getUser(String userId);
+    UserInfoResponse getUser(Long userId);
 }
