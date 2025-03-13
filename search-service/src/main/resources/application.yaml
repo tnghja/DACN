@@ -1,0 +1,26 @@
+server:
+  port: 8081
+  servlet:
+    context-path: /search-service
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST}/${DB_NAME}
+    username: ${POSTGRES_USERNAME:postgres}
+    password: ${POSTGRES_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  elasticsearch:
+    uris: http://localhost:9200
+    repositories:
+      enabled: true
+
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+logging:
+  level:
+    org.springframework.web: DEBUG
