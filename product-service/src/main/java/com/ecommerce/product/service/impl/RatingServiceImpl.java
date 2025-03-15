@@ -38,7 +38,7 @@ public class RatingServiceImpl implements  RatingService {
         Product product = productRepository.findById(ratingRequest.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        boolean hasApprovedOrder = orderRepository.existsByCustomerIdAndProductIdAndStatus(
+        boolean hasApprovedOrder = orderRepository.existsByCustomerIdAndOrderItemsProductIdAndStatus(
                 ratingRequest.getUserId(), ratingRequest.getProductId(), PaymentStatus.APPROVED);
 
         User user = userRepository.findById(ratingRequest.getUserId())

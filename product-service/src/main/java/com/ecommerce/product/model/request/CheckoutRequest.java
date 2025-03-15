@@ -9,8 +9,7 @@ import lombok.Getter;
 public class CheckoutRequest {
     @NotNull(message = "idCart is mandatory")
     Long CartId;
-    @NotNull(message = "idCartItems is mandatory")
-    String[] productIds;
-
-    Long DiscountId = null;
+//    @NotNull(message = "idCartItems is mandatory")
+//    String[] productIds;
+    Long DiscountId;
 }

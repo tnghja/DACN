@@ -11,7 +11,6 @@ import com.ecommerce.product.exception.ValidationException;
 import com.ecommerce.product.model.entity.*;
 import com.ecommerce.product.model.response.CartItemResponse;
 import com.ecommerce.product.model.response.CartResponse;
-import com.ecommerce.product.model.response.ProductResponse;
 import com.ecommerce.product.repository.*;
 import com.ecommerce.product.service.CartService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,7 +71,7 @@ public class CartServiceImpl implements CartService {
 
 
     @Override
-    public Product addProductToCart(Long userId, String productId, Integer quantity) {
+    public void addProductToCart(Long userId, String productId, Integer quantity) {
         try {
             Product product = productRepository.findById(productId)
                     .orElseThrow(() -> new NotFoundException("Product not found with ID: " + productId));
@@ -112,7 +111,6 @@ public class CartServiceImpl implements CartService {
             cart.setTotal(cart.getTotal() + (product.getPrice() * quantity));
             cartRepository.save(cart);
 
-            return product;
         } catch (NotFoundException | ValidationException ex) {
             throw ex;
         } catch (Exception ex) {
@@ -147,51 +145,53 @@ public class CartServiceImpl implements CartService {
         );
     }
 
-    @Transactional
-    public void copyCartToOrder(Long userId) {
-        try {
-            // Find the cart for the user
-            Cart cart = cartRepository.findByCustomer_Id(userId)
-                    .orElseThrow(() -> new NotFoundException("Cart not found for user ID: " + userId));
-
-            // Get all cart items
-            List<CartItem> cartItems = cartItemRepository.findAllByCart(cart);
-            if (cartItems.isEmpty()) {
-                throw new NotFoundException("No items in the cart");
-            }
-
-            // Create a new Order
-            Order order = new Order();
-            order.setCustomer(cart.getCustomer());
-            order.setOrderDate(new Date());
-            order.setTotalPrice(cart.getTotal());
-//            order.setStatus(OrderStatus.PENDING); // Order status: PENDING
-
-            Order savedOrder = orderRepository.save(order);
-
-            // Convert CartItems to OrderItems
-            List<OrderItem> orderItemsList = new ArrayList<>();
-
-            for (CartItem cartItem : cartItems) {
-                OrderItem orderItem = new OrderItem();
-                orderItem.setOrder(savedOrder);
-                orderItem.setProduct(cartItem.getProduct());
-                orderItem.setQuantity(cartItem.getQuantity());
-                orderItem.setPrice(cartItem.getProduct().getPrice() * cartItem.getQuantity()); // Store purchase price
-
-                orderItemsList.add(orderItem);
-            }
-
-            // Save all order items
-            orderItemRepository.saveAll(orderItemsList);
-
-            // Clear the cart after order placement
-            cartItemRepository.deleteAll(cartItems);
-            cartRepository.delete(cart);
-        } catch (Exception ex) {
-            throw new ApplicationException("An error occurred while copying the cart to the order: " + ex.getMessage());
-        }
-    }
+//    @Transactional
+//    public Order copyCartToOrder(Long userId) {
+//        try {
+//            // Find the cart for the user
+//            Cart cart = cartRepository.findByCustomer_Id(userId)
+//                    .orElseThrow(() -> new NotFoundException("Cart not found for user ID: " + userId));
+//
+//            // Get all cart items
+//            List<CartItem> cartItems = cartItemRepository.findAllByCart(cart);
+//            if (cartItems.isEmpty()) {
+//                throw new NotFoundException("No items in the cart");
+//            }
+//
+//            // Create a new Order
+//            Order order = new Order();
+//            order.setCustomer(cart.getCustomer());
+//            order.setOrderDate(new Date());
+//            order.setTotalPrice(cart.getTotal());
+////            order.setStatus(OrderStatus.PENDING); // Order status: PENDING
+//
+//            Order savedOrder = orderRepository.save(order);
+//
+//            // Convert CartItems to OrderItems
+//            List<OrderItem> orderItemsList = new ArrayList<>();
+//
+//            for (CartItem cartItem : cartItems) {
+//                OrderItem orderItem = new OrderItem();
+//                orderItem.setOrder(savedOrder);
+//                orderItem.setProduct(cartItem.getProduct());
+//                orderItem.setQuantity(cartItem.getQuantity());
+//                orderItem.setPrice(cartItem.getProduct().getPrice() * cartItem.getQuantity()); // Store purchase price
+//
+//                orderItemsList.add(orderItem);
+//            }
+//
+//            // Save all order items
+//            orderItemRepository.saveAll(orderItemsList);
+//
+//            // Clear the cart after order placement
+//            cartItemRepository.deleteAll(cartItems);
+//            cartRepository.delete(cart);
+//
+//            return order;
+//        } catch (Exception ex) {
+//            throw new ApplicationException("An error occurred while copying the cart to the order: " + ex.getMessage());
+//        }
+//    }
 
 
 //    @Override

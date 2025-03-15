@@ -13,9 +13,10 @@ import jakarta.servlet.http.HttpServletRequest;
 
 public interface OrderService {
 
-    CheckoutResponse checkoutOrder(Long userId);
 
-    Order placeOrder(Long userId);
+    CheckoutResponse checkoutOrder(CheckoutRequest request);
+
+    Order placeOrder(Long userId, Long couponId);
 
     PaymentResponse.VNPayResponse processingPurchaseOrder(PurchaseOrderDTO purchaseOrderDTO,
                                                           HttpServletRequest request);

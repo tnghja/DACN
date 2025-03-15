@@ -5,6 +5,7 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 
 @AllArgsConstructor
 @NoArgsConstructor
@@ -22,13 +23,18 @@ public class Order {
     private Double shipFee;
     private Double totalDiscount;
     private String shipCode;
-    private Date orderDate;
+    private LocalDateTime orderDate;
     private Double totalPrice;
     private PaymentStatus status;
+
+    @OneToOne
+    private Coupon coupon;
     @ManyToOne
     @JoinColumn(name = "customer_id")
     private User customer;
     @OneToOne
     @JoinColumn(name = "user_payment_id")
     private UserPayment userPayment;
+    @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> orderItems;
 }

@@ -41,7 +41,8 @@ public class Product {
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Rating> ratings;
 
-
+//    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+//    private List<CouponProduct> couponProducts;
     @ManyToOne
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;

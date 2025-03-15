@@ -2,6 +2,7 @@ package com.ecommerce.product.controller;
 
 import com.ecommerce.product.model.dto.PurchaseOrderDTO;
 import com.ecommerce.product.model.entity.Order;
+import com.ecommerce.product.model.request.CheckoutRequest;
 import com.ecommerce.product.model.response.ApiResponse;
 import com.ecommerce.product.model.response.CheckoutResponse;
 import com.ecommerce.product.model.response.PaymentResponse;
@@ -27,21 +28,21 @@ public class OrderController {
     private OrderService orderService;
     // Checkout Order
     @PostMapping("/checkout")
-    public ResponseEntity<ApiResponse<CheckoutResponse>> checkoutOrder(@RequestParam @NotNull Long userId) {
-        CheckoutResponse checkoutResponse = orderService.checkoutOrder(userId);
+    public ResponseEntity<ApiResponse<CheckoutResponse>> checkoutOrder(@RequestBody @Valid CheckoutRequest checkoutRequest) {
+        CheckoutResponse checkoutResponse = orderService.checkoutOrder(checkoutRequest);
         ApiResponse<CheckoutResponse> response = new ApiResponse<>();
         response.ok(checkoutResponse);
         return ResponseEntity.ok(response);
     }
 
     // Place Order
-    @PostMapping("/place")
-    public ResponseEntity<ApiResponse<Order>> placeOrder(@RequestParam @NotNull Long userId) {
-        Order order = orderService.placeOrder(userId);
-        ApiResponse<Order> response = new ApiResponse<>();
-        response.ok(order);
-        return ResponseEntity.ok(response);
-    }
+//    @PostMapping("/place")
+//    public ResponseEntity<ApiResponse<Order>> placeOrder(@RequestParam @NotNull Long userId) {
+//        Order order = orderService.placeOrder(userId);
+//        ApiResponse<Order> response = new ApiResponse<>();
+//        response.ok(order);
+//        return ResponseEntity.ok(response);
+//    }
 
     // Process Payment
     @PostMapping("/processingPurchase")

@@ -13,6 +13,7 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Query("SELECT o FROM Order o WHERE o.customer.id = :userId")
     List<Order> findByUserId(@Param("userId") Long userId);
 
-    boolean existsByCustomerIdAndProductIdAndStatus(Long customerId, String productId, PaymentStatus status);
+    boolean existsByCustomerIdAndOrderItemsProductIdAndStatus(Long customerId, String productId, PaymentStatus status);
+
 }
 

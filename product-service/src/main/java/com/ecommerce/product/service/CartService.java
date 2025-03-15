@@ -1,7 +1,7 @@
 package com.ecommerce.product.service;
 
 import com.ecommerce.product.model.entity.Cart;
-import com.ecommerce.product.model.entity.Product;
+import com.ecommerce.product.model.entity.Order;
 import com.ecommerce.product.model.response.CartResponse;
 
 public interface CartService {
@@ -9,7 +9,7 @@ public interface CartService {
 
     Cart createCart(Long userId);
 
-    Product addProductToCart(Long userId, String productId, Integer quantity);
+    void addProductToCart(Long userId, String productId, Integer quantity);
 
     CartResponse getCartByUserId(Long userId);
 
@@ -19,7 +19,7 @@ public interface CartService {
 
     void deleteCart(Long userId);
 
-    void copyCartToOrder(Long userId);
+//    Order copyCartToOrder(Long userId);
 
     void updateProductQuantityInCart(Long userId, String productId, Integer quantity);
 }
