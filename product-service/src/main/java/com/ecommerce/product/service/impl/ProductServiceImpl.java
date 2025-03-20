@@ -4,6 +4,7 @@ import com.ecommerce.product.exception.InvalidFileTypeException;
 import com.ecommerce.product.exception.NotFoundException;
 import com.ecommerce.product.model.dto.ProductDTO;
 import com.ecommerce.product.model.entity.Category;
+import com.ecommerce.product.model.entity.Image;
 import com.ecommerce.product.model.entity.Product;
 import com.ecommerce.product.model.mapper.ProductMapper;
 import com.ecommerce.product.model.request.ImageUploadRequest;
@@ -25,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -111,13 +113,22 @@ public class ProductServiceImpl implements ProductService {
 
 
     private void updateProductWithImage(String productId, String imageUrl) {
+        // Fetch the product by ID
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        Product product = productRepository.findByProductId(productId);
+        // Create a new Image object and set its URL
+        Image image = new Image();
+        image.setUrl(imageUrl);
 
-        product.getImages().add(imageUrl);
-        productRepository.save(product); // Save updated product
+        // Add the new image to the product's image list
+        if (product.getImages() == null) {
+            product.setImages(new ArrayList<>()); // Initialize the list if it's null
+        }
+        product.getImages().add(image);
 
-
+        // Save the updated product (this will cascade and save the new image)
+        productRepository.save(product);
     }
 
 
