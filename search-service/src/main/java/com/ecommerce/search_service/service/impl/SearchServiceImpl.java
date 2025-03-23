@@ -45,7 +45,7 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     public Page<ProductDocument> elasticSearchProducts(
-            String name, String category, Double minPrice, Double maxPrice, Double minRate, Double maxRate, Pageable pageable) {
+            String name, Long categoryId, Double minPrice, Double maxPrice, Double minRate, Double maxRate, Pageable pageable) {
 
         // Build the criteria for the query
         Criteria criteria = new Criteria();
@@ -54,8 +54,8 @@ public class SearchServiceImpl implements SearchService {
             criteria.and(new Criteria("name").fuzzy(name));
         }
 
-        if (category != null && !category.isEmpty()) {
-            criteria.and(new Criteria("categoryName").is(category));
+        if (categoryId != null) {
+            criteria.and(new Criteria("categoryId").is(categoryId));
         }
 
         if (minPrice != null) {
