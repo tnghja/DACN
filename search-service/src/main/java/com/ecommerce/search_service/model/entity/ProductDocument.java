@@ -10,7 +10,7 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Document(indexName = "products")
+@Document(indexName = "postgres.public.product")
 public class ProductDocument {
     @Id
     private String id;
@@ -21,7 +21,7 @@ public class ProductDocument {
     @Field(type = FieldType.Text)
     private String brand;
 
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Keyword, index = false)
     private String cover;
 
     @Field(type = FieldType.Text)
@@ -36,7 +36,6 @@ public class ProductDocument {
     @Field(type = FieldType.Double)
     private Double rate;
 
-    @Field(type = FieldType.Keyword)
-    private String categoryName;
-
+    @Field(type = FieldType.Long)
+    private Long categoryId;
 }

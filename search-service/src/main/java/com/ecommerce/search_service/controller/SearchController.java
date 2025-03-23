@@ -58,7 +58,7 @@ public class SearchController {
     @GetMapping("/elasticSearch")
     public ResponseEntity<ApiResponse<List<ProductDocument>>> elasticSearchProducts(
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Double minPrice,
             @RequestParam(required = false) Double maxPrice,
             @RequestParam(required = false) Double minRate,
@@ -67,7 +67,7 @@ public class SearchController {
             @RequestParam(defaultValue = "10") int size) {
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<ProductDocument> productPage = searchService.elasticSearchProducts(name, category, minPrice, maxPrice, minRate, maxRate, pageable);
+        Page<ProductDocument> productPage = searchService.elasticSearchProducts(name, categoryId, minPrice, maxPrice, minRate, maxRate, pageable);
 
         ApiResponse<List<ProductDocument>> response = new ApiResponse<>();
         response.ok(productPage.getContent());
