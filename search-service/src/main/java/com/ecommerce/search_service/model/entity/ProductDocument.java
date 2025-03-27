@@ -36,6 +36,6 @@ public class ProductDocument {
     @Field(type = FieldType.Double)
     private Double rate;
 
-    @Field(type = FieldType.Long)
+    @Field(type = FieldType.Long,name = "category_id")
     private Long categoryId;
 }

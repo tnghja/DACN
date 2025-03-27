@@ -14,4 +14,5 @@ import java.util.List;
 public interface SearchService {
     Page<ProductResponse> searchProducts(String name, String category, Double minPrice, Double maxPrice, Double minRate, Double maxRate, Pageable pageable);
     Page<ProductDocument> elasticSearchProducts(String name, Long categoryId, Double minPrice, Double maxPrice, Double minRate, Double maxRate, Pageable pageable);
+    List<ProductResponse> findProductsByIds(List<String> productIds);
 }

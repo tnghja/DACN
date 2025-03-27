@@ -29,8 +29,6 @@ public class SearchServiceImpl implements SearchService {
     @Autowired
     private ProductRepository productRepository;
 
-    @Autowired
-    private ProductElasticsearchRepository productElasticsearchRepository;
 
     @Autowired
     private ProductMapper productMapper;
@@ -90,5 +88,17 @@ public class SearchServiceImpl implements SearchService {
 
         // Create and return a Page object
         return new PageImpl<>(content, pageable, totalElements);
+    }
+    @Override
+    public List<ProductResponse> findProductsByIds(List<String> productIds) {
+        Criteria criteria = new Criteria("id").in(productIds);
+        CriteriaQuery query = new CriteriaQuery(criteria);
+
+        SearchHits<ProductDocument> searchHits = elasticsearchOperations.search(query, ProductDocument.class);
+        System.out.println(searchHits);
+        // Map results to ProductResponse
+        return searchHits.getSearchHits().stream()
+                .map(hit -> productMapper.toResponse(hit.getContent()))
+                .collect(Collectors.toList());
     }
 }

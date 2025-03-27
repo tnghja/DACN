@@ -2,6 +2,7 @@ package com.ecommerce.search_service.controller;
 
 import com.ecommerce.search_service.model.entity.Product;
 import com.ecommerce.search_service.model.entity.ProductDocument;
+import com.ecommerce.search_service.model.request.ProductListRequest;
 import com.ecommerce.search_service.model.response.ApiResponse;
 import com.ecommerce.search_service.model.response.ProductResponse;
 import com.ecommerce.search_service.service.SearchService;
@@ -79,6 +80,11 @@ public class SearchController {
         ));
 
         return ResponseEntity.ok(response);
+    }
+    @PostMapping("/products/batch")
+    public ResponseEntity<List<ProductResponse>> getProductsByIds(@Valid @RequestBody ProductListRequest request) {
+        List<ProductResponse> products = searchService.findProductsByIds(request.getProductIds());
+        return ResponseEntity.ok(products);
     }
 
 
