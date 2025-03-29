@@ -15,10 +15,10 @@ public class ProductDocument {
     @Id
     private String id;
 
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Search_As_You_Type) // hỗ trợ autocomplete luôn
     private String name;
 
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Keyword) // chuẩn cho filter
     private String brand;
 
     @Field(type = FieldType.Keyword, index = false)
@@ -36,6 +36,6 @@ public class ProductDocument {
     @Field(type = FieldType.Double)
     private Double rate;
 
-    @Field(type = FieldType.Long,name = "category_id")
+    @Field(type = FieldType.Long, name = "category_id")
     private Long categoryId;
 }

@@ -8,11 +8,17 @@ import com.ecommerce.search_service.model.response.ProductResponse;
 import org.springframework.boot.autoconfigure.data.web.SpringDataWebProperties;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.elasticsearch.core.SearchHit;
+import org.springframework.data.elasticsearch.core.SearchHits;
 
 import java.util.List;
 
 public interface SearchService {
     Page<ProductResponse> searchProducts(String name, String category, Double minPrice, Double maxPrice, Double minRate, Double maxRate, Pageable pageable);
-    Page<ProductDocument> elasticSearchProducts(String name, Long categoryId, Double minPrice, Double maxPrice, Double minRate, Double maxRate, Pageable pageable);
+//    Page<ProductDocument> elasticSearchProducts(String name, Long categoryId, Double minPrice, Double maxPrice, Double minRate, Double maxRate, Pageable pageable);
     List<ProductResponse> findProductsByIds(List<String> productIds);
+    public Page<SearchHit<ProductDocument>> elasticSearchProducts(
+            String name, Long categoryId, Double minPrice, Double maxPrice, Double minRate, Double maxRate, Pageable pageable);
+
+    List<String> autocompleteProductNames(String prefix);
 }
