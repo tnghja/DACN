@@ -1,10 +1,13 @@
 package com.ecommerce.search_service.controller;
 
+import com.ecommerce.search_service.exception.SearchOptionsException;
 import com.ecommerce.search_service.model.entity.Product;
 import com.ecommerce.search_service.model.entity.ProductDocument;
+import com.ecommerce.search_service.model.request.ElasticSearchRequest;
 import com.ecommerce.search_service.model.request.ProductListRequest;
 import com.ecommerce.search_service.model.response.ApiResponse;
 import com.ecommerce.search_service.model.response.ProductResponse;
+import com.ecommerce.search_service.service.ImageSearchService;
 import com.ecommerce.search_service.service.SearchService;
 import jakarta.validation.Valid;
 import lombok.AccessLevel;
@@ -17,12 +20,19 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.DigestUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
+import static com.ecommerce.search_service.constants.SortConstants.getSortMetadata;
 
 @RestController
 @RequiredArgsConstructor
@@ -59,115 +69,33 @@ public class SearchController {
 
         return ResponseEntity.ok(response);
     }
-//    @GetMapping("/elasticSearch")
-//    public ResponseEntity<ApiResponse<List<ProductDocument>>> elasticSearchProducts(
-//            @RequestParam(required = false) String name,
-//            @RequestParam(required = false) Long categoryId,
-//            @RequestParam(required = false) Double minPrice,
-//            @RequestParam(required = false) Double maxPrice,
-//            @RequestParam(required = false) Double minRate,
-//            @RequestParam(required = false) Double maxRate,
-//            @RequestParam(defaultValue = "0") int page,
-//            @RequestParam(defaultValue = "10") int size) {
-//
-//        Pageable pageable = PageRequest.of(page, size);
-//        Page<ProductDocument> productPage = searchService.elasticSearchProducts(name, categoryId, minPrice, maxPrice, minRate, maxRate, pageable);
-//
-//        ApiResponse<List<ProductDocument>> response = new ApiResponse<>();
-//        response.ok(productPage.getContent());
-//        response.setMetadata(Map.of(
-//                "currentPage", productPage.getNumber(),
-//                "totalItems", productPage.getTotalElements(),
-//                "totalPages", productPage.getTotalPages(),
-//                "pageSize", productPage.getSize()
-//        ));
-//
-//        return ResponseEntity.ok(response);
-//    }
     @PostMapping("/products/batch")
     public ResponseEntity<List<ProductResponse>> getProductsByIds(@Valid @RequestBody ProductListRequest request) {
         List<ProductResponse> products = searchService.findProductsByIds(request.getProductIds());
         return ResponseEntity.ok(products);
     }
-    private static final List<String> AVAILABLE_SORT_FIELDS = List.of("price", "rate", "quantity");
-    private Map<String, Object> getSortMetadata() {
-        return Map.of(
-                "availableFields", AVAILABLE_SORT_FIELDS,
-                "syntax", "field,direction (e.g., price,asc or rate,desc)",
-                "directions", List.of("asc", "desc")
-        );
-    }
-    @GetMapping("/elasticSearch")
+    @PostMapping("/elasticSearch")
     public ResponseEntity<ApiResponse<List<SearchHit<ProductDocument>>>> elasticSearchProducts(
-            @RequestParam(required = false) String name,
-            @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) Double minPrice,
-            @RequestParam(required = false) Double maxPrice,
-            @RequestParam(required = false) Double minRate,
-            @RequestParam(required = false) Double maxRate,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(required = false) String sort) {
+            @Valid @RequestBody ElasticSearchRequest request) {
 
-        Pageable pageable;
         ApiResponse<List<SearchHit<ProductDocument>>> response = new ApiResponse<>();
 
-        // Xử lý sort từ query parameter
-        if (sort != null) {
-            try {
-                String[] sortParts = sort.split(",");
-                if (sortParts.length != 2) {
-                    response.error(
-                            Map.of("sort", "Invalid sort format"),
-                            Map.of("details", "Use 'field,direction' (e.g., price,asc)")
-                    );
-                    response.setMetadata(getSortMetadata());
-                    return ResponseEntity.badRequest().body(response);
-                }
-
-                String field = sortParts[0];
-                String direction = sortParts[1];
-
-                // Kiểm tra field có hợp lệ không
-                if (!AVAILABLE_SORT_FIELDS.contains(field)) {
-                    response.error(
-                            Map.of("sort", "Invalid sort field: " + field),
-                            Map.of("availableFields", AVAILABLE_SORT_FIELDS)
-                    );
-                    response.setMetadata(getSortMetadata());
-                    return ResponseEntity.badRequest().body(response);
-                }
-
-                // Kiểm tra direction có hợp lệ không
-                if (!direction.equalsIgnoreCase("asc") && !direction.equalsIgnoreCase("desc")) {
-                    response.error(
-                            Map.of("sort", "Invalid sort direction: " + direction),
-                            Map.of("directions", List.of("asc", "desc"))
-                    );
-                    response.setMetadata(getSortMetadata());
-                    return ResponseEntity.badRequest().body(response);
-                }
-
-                pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(direction), field));
-            } catch (Exception e) {
-                response.error(
-                        Map.of("sort", "Error parsing sort parameter"),
-                        Map.of("errorDetails", e.getMessage())
-                );
-                response.setMetadata(getSortMetadata());
-                return ResponseEntity.badRequest().body(response);
-            }
-        } else {
-            pageable = PageRequest.of(page, size);
+        // Validate minPrice <= maxPrice
+        if (request.getMinPrice() != null && request.getMaxPrice() != null && request.getMinPrice() > request.getMaxPrice()) {
+            throw new SearchOptionsException("minPrice cannot be greater than maxPrice");
         }
 
-        Page<SearchHit<ProductDocument>> productPage = searchService.elasticSearchProducts(
-                name, categoryId, minPrice, maxPrice, minRate, maxRate, pageable
-        );
+        // Validate minRate <= maxRate
+        if (request.getMinRate() != null && request.getMaxRate() != null && request.getMinRate() > request.getMaxRate()) {
+            throw new SearchOptionsException("minRate cannot be greater than maxRate");
+        }
+
+        // Gọi service với request
+        Page<SearchHit<ProductDocument>> productPage = searchService.elasticSearchProducts(request);
 
         response.ok(productPage.getContent());
         response.setMetadata(Map.of(
-                "currentPage", productPage.getNumber(),
+                "currentPage", request.getPage(),
                 "totalItems", productPage.getTotalElements(),
                 "totalPages", productPage.getTotalPages(),
                 "pageSize", productPage.getSize(),
@@ -190,5 +118,51 @@ public class SearchController {
 
         return ResponseEntity.ok(response);
     }
+//    @PostMapping(value = "/searchImage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+//    public ResponseEntity<ApiResponse<List<ProductDocument>>> searchSimilarityImages(
+//            @RequestParam("file") MultipartFile file,
+//            @RequestParam(defaultValue = "0") int page, // Page starts at 0 for Spring Pageable
+//            @RequestParam(defaultValue = "10") int size,
+//            @RequestParam(required = false) String sort) {
+//
+//
+//        // Step 1: Create cache key from file content
+//        Pageable pageable = (sort != null)
+//                ? PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sort.split(",")[1]), sort.split(",")[0]))
+//                : PageRequest.of(page, size);
+//
+//        List<String> productIds;
+//        if (cachedProductIds == null || cachedProductIds.isEmpty()) {
+//            // Step 2: Extract vector and query Pinecone
+//            List<String> vector = imageSearchService.getImageVector(fileContent);
+//            productIds = imageSearchService.queryPinecone(vector);
+//            imageSearchService.cacheProductIds(cacheKey, productIds);
+//        } else {
+//            productIds = new ArrayList<>(cachedProductIds);
+//        }
+//
+//        // Step 3: Pagination
+//        int totalItems = productIds.size();
+//        int totalPages = (int) Math.ceil((double) totalItems / pageSize);
+//        int startIdx = (page - 1) * pageSize;
+//        int endIdx = Math.min(startIdx + pageSize, totalItems);
+//        List<String> paginatedProductIds = productIds.subList(startIdx, endIdx);
+//
+//        // Step 4: Fetch product info
+//        List<ProductInfo> productInfo = imageSearchService.fetchProducts(paginatedProductIds);
+//
+//        // Step 5: Build response
+//        ApiResponse<List<ProductInfo>> response = ApiResponse.ok(productInfo);
+//        response.setMetadata(Map.of(
+//                "currentPage", page,
+//                "totalItems", totalItems,
+//                "pageSize", pageSize,
+//                "totalPages", totalPages
+//        ));
+//
+//        return ResponseEntity.ok(response);
+//
+//
+//    }
 
 }

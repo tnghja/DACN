@@ -15,8 +15,12 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import com.ecommerce.search_service.exception.*;
+
+import static com.ecommerce.search_service.constants.SortConstants.getSortMetadata;
+
 @RestControllerAdvice
 public class  GlobalExceptionHandler {
 
@@ -40,6 +44,20 @@ public class  GlobalExceptionHandler {
         apiResponse.error(error);
         return apiResponse;
     }
+    @ExceptionHandler(SearchOptionsException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseBody
+    public ApiResponse handleSearchOptionsException(SearchOptionsException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("errorCode", "400");
+        error.put("errorMessage", "INVALID_SEARCH_OPTIONS");
+        error.put("details", ex.getMessage());
+
+        ApiResponse apiResponse = new ApiResponse();
+        apiResponse.error(error, getSortMetadata()); // Thêm metadata vào response
+        return apiResponse;
+    }
+
 
     @ExceptionHandler(ValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)

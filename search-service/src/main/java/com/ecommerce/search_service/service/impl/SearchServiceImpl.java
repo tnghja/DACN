@@ -1,9 +1,11 @@
 package com.ecommerce.search_service.service.impl;
 
 import co.elastic.clients.json.JsonData;
+import com.ecommerce.search_service.exception.SearchOptionsException;
 import com.ecommerce.search_service.model.entity.Product;
 import com.ecommerce.search_service.model.entity.ProductDocument;
 import com.ecommerce.search_service.model.mapper.ProductMapper;
+import com.ecommerce.search_service.model.request.ElasticSearchRequest;
 import com.ecommerce.search_service.model.response.ProductResponse;
 
 import com.ecommerce.search_service.repository.ProductRepository;
@@ -11,9 +13,7 @@ import com.ecommerce.search_service.repository.ProductSpecification;
 import com.ecommerce.search_service.service.SearchService;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
@@ -29,6 +29,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.ecommerce.search_service.constants.SortConstants.AVAILABLE_SORT_FIELDS;
 
 @Service
 public class SearchServiceImpl implements SearchService {
@@ -48,89 +50,48 @@ public class SearchServiceImpl implements SearchService {
         return products.map(productMapper::toResponse);
     }
 
-//    @Override
-//    public Page<ProductDocument> elasticSearchProducts(
-//            String name, Long categoryId, Double minPrice, Double maxPrice, Double minRate, Double maxRate, Pageable pageable) {
-//
-//        // Build the criteria for the query
-//        Criteria criteria = new Criteria();
-//
-//        if (name != null && !name.isEmpty()) {
-//            criteria.and(new Criteria("name").fuzzy(name));
-//        }
-//
-//        if (categoryId != null) {
-//            criteria.and(new Criteria("categoryId").is(categoryId));
-//        }
-//
-//        if (minPrice != null) {
-//            criteria.and(new Criteria("price").greaterThanEqual(minPrice));
-//        }
-//
-//        if (maxPrice != null) {
-//            criteria.and(new Criteria("price").lessThanEqual(maxPrice));
-//        }
-//
-//        if (minRate != null) {
-//            criteria.and(new Criteria("rate").greaterThanEqual(minRate));
-//        }
-//
-//        if (maxRate != null) {
-//            criteria.and(new Criteria("rate").lessThanEqual(maxRate));
-//        }
-//
-//        // Create the query with pagination
-//        Query query = new CriteriaQuery(criteria).setPageable(pageable);
-//
-//        // Execute the search
-//        SearchHits<ProductDocument> searchHits = elasticsearchOperations.search(query, ProductDocument.class);
-//
-//        // Extract the content (results for the current page)
-//        List<ProductDocument> content = searchHits.stream()
-//                .map(hit -> hit.getContent())
-//                .collect(Collectors.toList());
-//
-//        // Get the total number of elements (for pagination)
-//        long totalElements = searchHits.getTotalHits();
-//
-//        // Create and return a Page object
-//        return new PageImpl<>(content, pageable, totalElements);
-//    }
-    public Page<SearchHit<ProductDocument>> elasticSearchProducts(
-            String name, Long categoryId, Double minPrice, Double maxPrice, Double minRate, Double maxRate, Pageable pageable) {
+    private Pageable buildPageable(ElasticSearchRequest request) {
+        int pageIndex = request.getPage() - 1; // Chuyển từ 1-based sang 0-based
+        int size = request.getSize();
 
-        // Xây dựng Highlight
-        HighlightParameters highlightParameters = HighlightParameters.builder()
-                .withPreTags("<strong>")
-                .withPostTags("</strong>")
-                .build();
+        if (request.getSort() != null) {
+            String[] sortParts = request.getSort().split(",");
+            if (sortParts.length != 2) {
+                throw new SearchOptionsException("Invalid sort format. Use 'field,direction' (e.g., price,asc)");
+            }
 
-        Highlight highlight = new Highlight(
-                highlightParameters,
-                List.of(
-                        new HighlightField("name"),
-                        new HighlightField("description")
-                )
-        );
+            String field = sortParts[0];
+            String direction = sortParts[1];
 
-        // Xây dựng NativeQuery với MultiMatch và Filter
+            if (!AVAILABLE_SORT_FIELDS.contains(field)) {
+                throw new SearchOptionsException("Invalid sort field: " + field);
+            }
+
+            return PageRequest.of(pageIndex, size, Sort.by(Sort.Direction.fromString(direction), field));
+        }
+
+        return PageRequest.of(pageIndex, size);
+    }
+    public Page<SearchHit<ProductDocument>> elasticSearchProducts(ElasticSearchRequest request) {
+        Pageable pageable = buildPageable(request);
+
         NativeQuery searchQuery = NativeQuery.builder()
                 .withQuery(q -> q
                         .bool(b -> {
                             // Tìm kiếm với ưu tiên khớp chính xác và tiền tố
-                            if (name != null && !name.isEmpty()) {
+                            if (request.getName() != null && !request.getName() .isEmpty()) {
                                 b.must(m -> m
                                         .bool(b2 -> b2
                                                 .should(s -> s
                                                         .matchPhrasePrefix(mp -> mp
                                                                 .field("name")
-                                                                .query(name)
+                                                                .query(request.getName() )
                                                                 .boost(20.0f)
                                                         )
                                                 )
                                                 .should(s -> s
                                                         .multiMatch(mm -> mm
-                                                                .query(name)
+                                                                .query(request.getName() )
                                                                 .fields(List.of("name^5", "description^2", "brand^3"))
                                                                 .fuzziness("AUTO")
                                                                 .type(co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType.BestFields)
@@ -140,45 +101,37 @@ public class SearchServiceImpl implements SearchService {
                                         )
                                 );
                             }
-                            // Filter cho categoryId
-                            if (categoryId != null) {
-                                b.filter(f -> f.term(t -> t.field("categoryId").value(categoryId)));
-                            }
-                            // Filter cho price range với JsonData
-                            if (minPrice != null || maxPrice != null) {
-                                b.filter(f -> f.range(r -> {
-                                    r.field("price");
-                                    if (minPrice != null) r.gte(JsonData.of(minPrice));
-                                    if (maxPrice != null) r.lte(JsonData.of(maxPrice));
-                                    return r;
-                                }));
-                            }
-                            // Filter cho rate range với JsonData
-                            if (minRate != null || maxRate != null) {
-                                b.filter(f -> f.range(r -> {
-                                    r.field("rate");
-                                    if (minRate != null) r.gte(JsonData.of(minRate));
-                                    if (maxRate != null) r.lte(JsonData.of(maxRate));
-                                    return r;
-                                }));
-                            }
-                            return b;
-                        })
-                )
-                .withHighlightQuery(new HighlightQuery(highlight, ProductDocument.class))
-                .withPageable(pageable) // Pageable đã bao gồm sort
+                        if (request.getCategoryId() != null) {
+                            b.filter(f -> f.term(t -> t.field("categoryId").value(request.getCategoryId())));
+                        }
+                        if (request.getMinPrice() != null || request.getMaxPrice() != null) {
+                            b.filter(f -> f.range(r -> {
+                                r.field("price");
+                                if (request.getMinPrice() != null) r.gte(JsonData.of(request.getMinPrice()));
+                                if (request.getMaxPrice() != null) r.lte(JsonData.of(request.getMaxPrice()));
+                                return r;
+                            }));
+                        }
+                        if (request.getMinRate() != null || request.getMaxRate() != null) {
+                            b.filter(f -> f.range(r -> {
+                                r.field("rate");
+                                if (request.getMinRate() != null) r.gte(JsonData.of(request.getMinRate()));
+                                if (request.getMaxRate() != null) r.lte(JsonData.of(request.getMaxRate()));
+                                return r;
+                            }));
+                        }
+                        return b;
+                }))
+                .withPageable(pageable)
                 .build();
 
-        // Thực hiện truy vấn lấy SearchHits
         SearchHits<ProductDocument> searchHits = elasticsearchOperations.search(
                 searchQuery,
                 ProductDocument.class,
                 IndexCoordinates.of("postgres.public.product")
         );
 
-        // Chuyển đổi SearchHits sang Page<SearchHit<ProductDocument>>
-        List<SearchHit<ProductDocument>> searchHitList = searchHits.getSearchHits();
-        return new PageImpl<>(searchHitList, pageable, searchHits.getTotalHits());
+        return new PageImpl<>(searchHits.getSearchHits(), pageable, searchHits.getTotalHits());
     }
     @Override
     public List<ProductResponse> findProductsByIds(List<String> productIds) {
