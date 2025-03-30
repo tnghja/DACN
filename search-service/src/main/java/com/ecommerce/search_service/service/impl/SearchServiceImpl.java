@@ -102,7 +102,7 @@ public class SearchServiceImpl implements SearchService {
                                 );
                             }
                         if (request.getCategoryId() != null) {
-                            b.filter(f -> f.term(t -> t.field("categoryId").value(request.getCategoryId())));
+                            b.filter(f -> f.term(t -> t.field("category_id").value(request.getCategoryId())));
                         }
                         if (request.getMinPrice() != null || request.getMaxPrice() != null) {
                             b.filter(f -> f.range(r -> {

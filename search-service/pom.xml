@@ -112,14 +112,6 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-redis</artifactId>
 		</dependency>
-		<!-- https://mvnrepository.com/artifact/com.h2database/h2 -->
-		<!-- https://mvnrepository.com/artifact/co.elastic.clients/elasticsearch-java -->
-		<!-- https://mvnrepository.com/artifact/co.elastic.clients/elasticsearch-java -->
-<!--		<dependency>-->
-<!--			<groupId>co.elastic.clients</groupId>-->
-<!--			<artifactId>elasticsearch-java</artifactId>-->
-<!--			<version>8.17.2</version>-->
-<!--		</dependency>-->
 
 
 
