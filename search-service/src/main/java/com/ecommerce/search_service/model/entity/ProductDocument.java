@@ -10,18 +10,18 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-@Document(indexName = "products")
+@Document(indexName = "postgres.public.product")
 public class ProductDocument {
     @Id
     private String id;
 
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Search_As_You_Type) // hỗ trợ autocomplete luôn
     private String name;
 
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Keyword) // chuẩn cho filter
     private String brand;
 
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Keyword, index = false)
     private String cover;
 
     @Field(type = FieldType.Text)
@@ -36,7 +36,6 @@ public class ProductDocument {
     @Field(type = FieldType.Double)
     private Double rate;
 
-    @Field(type = FieldType.Keyword)
-    private String categoryName;
-
+    @Field(type = FieldType.Long, name = "category_id")
+    private Long categoryId;
 }
