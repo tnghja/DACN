@@ -32,7 +32,7 @@ jobs:
         cache: maven
 
     - name: Grant execute permission for Maven Wrapper
-      run: chmod +x mvnw
+      run: chmod +x order-service/mvnw
 
     - name: Build order-service with Maven
       run: |
