@@ -34,6 +34,8 @@ jobs:
     - name: Grant execute permission for Maven Wrapper
       run: chmod +x mvnw
 
-    - name: Build OrderService with Maven
-      run: cd order-service && ../mvnw clean package -Dmaven.test.skip=true
+    - name: Build order-service with Maven
+      run: |
+        cd order-service
+        ./mvnw clean package -Dmaven.test.skip=true
 
