@@ -8,6 +8,7 @@ spring:
     url: jdbc:postgresql://yamanote.proxy.rlwy.net:19755/railway
     username: postgres
     password: sxSaLoNJMmZOofAcxwUFORnbLJOmxPuN
+
     driver-class-name: org.postgresql.Driver
 
   jpa:
