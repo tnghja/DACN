@@ -57,7 +57,32 @@ public class  GlobalExceptionHandler {
         apiResponse.error(error, getSortMetadata()); // Thêm metadata vào response
         return apiResponse;
     }
+    @ExceptionHandler(InvalidImageException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseBody
+    public ApiResponse<Void> handleInvalidImageException(InvalidImageException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("errorCode", "400");
+        error.put("errorMessage", "INVALID_IMAGE");
+        error.put("details", ex.getMessage());
 
+        ApiResponse<Void> apiResponse = new ApiResponse<>();
+        apiResponse.error(error);
+        return apiResponse;
+    }
+    @ExceptionHandler(ImageProcessingException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ResponseBody
+    public ApiResponse handleImageProcessingException(ImageProcessingException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("errorCode", "400");
+        error.put("errorMessage", "IMAGE_PROCESSING_ERROR");
+        error.put("details", ex.getMessage());
+
+        ApiResponse<Void> apiResponse = new ApiResponse<>();
+        apiResponse.error(error);
+        return apiResponse;
+    }
 
     @ExceptionHandler(ValidationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)

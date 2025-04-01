@@ -1,15 +1,19 @@
 package com.ecommerce.search_service.controller;
 
+import com.ecommerce.search_service.exception.InvalidImageException;
 import com.ecommerce.search_service.exception.SearchOptionsException;
-import com.ecommerce.search_service.model.entity.Product;
 import com.ecommerce.search_service.model.entity.ProductDocument;
 import com.ecommerce.search_service.model.request.ElasticSearchRequest;
+import com.ecommerce.search_service.model.request.ImageSearchRequest;
+import com.ecommerce.search_service.model.request.ImageSessionRequest;
 import com.ecommerce.search_service.model.request.ProductListRequest;
 import com.ecommerce.search_service.model.response.ApiResponse;
+import com.ecommerce.search_service.model.response.ImageSearchResponse;
 import com.ecommerce.search_service.model.response.ProductResponse;
 import com.ecommerce.search_service.service.ImageSearchService;
 import com.ecommerce.search_service.service.SearchService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -17,21 +21,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.data.elasticsearch.core.SearchHit;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.util.DigestUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
+import static com.ecommerce.search_service.constants.ImageConstants.ALLOWED_IMAGE_TYPES;
 import static com.ecommerce.search_service.constants.SortConstants.getSortMetadata;
 
 @RestController
@@ -42,6 +41,8 @@ import static com.ecommerce.search_service.constants.SortConstants.getSortMetada
 public class SearchController {
     @Autowired
     SearchService searchService;
+    @Autowired
+    ImageSearchService imageSearchService;
 
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<ProductResponse>>> searchProducts(
@@ -69,11 +70,13 @@ public class SearchController {
 
         return ResponseEntity.ok(response);
     }
+
     @PostMapping("/products/batch")
-    public ResponseEntity<List<ProductResponse>> getProductsByIds(@Valid @RequestBody ProductListRequest request) {
-        List<ProductResponse> products = searchService.findProductsByIds(request.getProductIds());
+    public ResponseEntity<List<ProductDocument>> getProductsByIds(@Valid @RequestBody ProductListRequest request) {
+        List<ProductDocument> products = searchService.findProductsByIds(request.getProductIds());
         return ResponseEntity.ok(products);
     }
+
     @PostMapping("/elasticSearch")
     public ResponseEntity<ApiResponse<List<SearchHit<ProductDocument>>>> elasticSearchProducts(
             @Valid @RequestBody ElasticSearchRequest request) {
@@ -104,6 +107,7 @@ public class SearchController {
 
         return ResponseEntity.ok(response);
     }
+
     @GetMapping("/autocomplete")
     public ResponseEntity<ApiResponse<List<String>>> autocomplete(
             @RequestParam String prefix) {
@@ -118,51 +122,48 @@ public class SearchController {
 
         return ResponseEntity.ok(response);
     }
-//    @PostMapping(value = "/searchImage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-//    public ResponseEntity<ApiResponse<List<ProductDocument>>> searchSimilarityImages(
-//            @RequestParam("file") MultipartFile file,
-//            @RequestParam(defaultValue = "0") int page, // Page starts at 0 for Spring Pageable
-//            @RequestParam(defaultValue = "10") int size,
-//            @RequestParam(required = false) String sort) {
-//
-//
-//        // Step 1: Create cache key from file content
-//        Pageable pageable = (sort != null)
-//                ? PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sort.split(",")[1]), sort.split(",")[0]))
-//                : PageRequest.of(page, size);
-//
-//        List<String> productIds;
-//        if (cachedProductIds == null || cachedProductIds.isEmpty()) {
-//            // Step 2: Extract vector and query Pinecone
-//            List<String> vector = imageSearchService.getImageVector(fileContent);
-//            productIds = imageSearchService.queryPinecone(vector);
-//            imageSearchService.cacheProductIds(cacheKey, productIds);
-//        } else {
-//            productIds = new ArrayList<>(cachedProductIds);
-//        }
-//
-//        // Step 3: Pagination
-//        int totalItems = productIds.size();
-//        int totalPages = (int) Math.ceil((double) totalItems / pageSize);
-//        int startIdx = (page - 1) * pageSize;
-//        int endIdx = Math.min(startIdx + pageSize, totalItems);
-//        List<String> paginatedProductIds = productIds.subList(startIdx, endIdx);
-//
-//        // Step 4: Fetch product info
-//        List<ProductInfo> productInfo = imageSearchService.fetchProducts(paginatedProductIds);
-//
-//        // Step 5: Build response
-//        ApiResponse<List<ProductInfo>> response = ApiResponse.ok(productInfo);
-//        response.setMetadata(Map.of(
-//                "currentPage", page,
-//                "totalItems", totalItems,
-//                "pageSize", pageSize,
-//                "totalPages", totalPages
-//        ));
-//
-//        return ResponseEntity.ok(response);
-//
-//
-//    }
+
+
+    @PostMapping(value = "/image-search", consumes = "multipart/form-data")
+    public ResponseEntity<ApiResponse<ImageSearchResponse>> imageSearch(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(value = "page", defaultValue = "1") @Min(1) int page,
+            @RequestParam(value = "pageSize", defaultValue = "10") @Min(1) int pageSize) {
+        ImageSearchRequest request = new ImageSearchRequest(file, page, pageSize);
+
+        // Kiểm tra file có rỗng không
+        if (file.isEmpty()) {
+            throw new InvalidImageException("Uploaded image file is empty.");
+        }
+
+        // Kiểm tra content type của file
+        String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType)) {
+            throw new InvalidImageException("Invalid file format. Only JPEG, PNG are allowed.");
+        }
+
+        // Gọi service xử lý tìm kiếm
+        ImageSearchResponse searchResponse = imageSearchService.searchByImage(request);
+
+        // Tạo response theo format Elasticsearch API
+        ApiResponse<ImageSearchResponse> response = new ApiResponse<>();
+        response.ok(searchResponse);
+
+        return ResponseEntity.ok(response);
+
+    }
+
+    @PostMapping("/session")
+    public ResponseEntity<ApiResponse<ImageSearchResponse>> getPaginatedResults(
+            @Valid @RequestBody ImageSessionRequest request) {
+
+        // Gọi service lấy dữ liệu từ Redis và phân trang
+        ImageSearchResponse productPage = imageSearchService.getPaginatedResults(request);
+
+        ApiResponse<ImageSearchResponse> response = new ApiResponse<>();
+        response.ok(productPage);
+
+        return ResponseEntity.ok(response);
+    }
 
 }

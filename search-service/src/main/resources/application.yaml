@@ -4,6 +4,13 @@ server:
     context-path: /search-service
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  codec:
+    max-in-memory-size: 50MB
+
   datasource:
     url: jdbc:postgresql://${POSTGRES_HOST}/${DB_NAME}
     username: ${POSTGRES_USERNAME:postgres}
@@ -20,7 +27,7 @@ spring:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
       password: ${REDIS_PASSWORD}
-      timeout: 6000
+      timeout: 600000ms
       username: ${REDIS_USERNAME}
   jpa:
     hibernate:
@@ -28,6 +35,9 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
+pinecone:
+  api-key: pcsk_KUtgS_DZYC6qjTGi8VoK2rEEX99z41P48ug7oX2gAM6XbJvMMqm8aRkyfmzEfHVXeRpLB
+  index-name: image-search
 logging:
   level:
     org.springframework.web: DEBUG
