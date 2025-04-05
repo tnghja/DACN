@@ -7,6 +7,7 @@ import com.ecommerce.search_service.model.request.ImageSearchRequest;
 import com.ecommerce.search_service.model.request.ImageSessionRequest;
 import com.ecommerce.search_service.model.response.ImageSearchResponse;
 import com.ecommerce.search_service.service.ImageSearchService;
+import com.ecommerce.search_service.service.ImageVectorService;
 import com.ecommerce.search_service.service.RedisService;
 import com.ecommerce.search_service.service.SearchService;
 import com.ecommerce.search_service.utils.ImageHashUtil;
@@ -33,59 +34,26 @@ import java.util.stream.Collectors;
 @Service
 public class ImageSearchServiceImpl implements ImageSearchService {
 
-
     private static final int TOP_K = 30;
     private final String EXTRACT_VECTOR_URL = "http://localhost:8000/extract-vector"; // FastAPI endpoint
     private final WebClient webClient;
     private final SearchService searchService;
-
+    private final ImageVectorService imageVectorService;
     private final Index pineconeIndex;
     private final RedisService redisService;
 
     @Autowired
-    public ImageSearchServiceImpl(WebClient webClient, SearchService searchService, Index pineconeIndex, RedisService redisService) {
+    public ImageSearchServiceImpl(WebClient webClient, SearchService searchService, ImageVectorService imageVectorService, Index pineconeIndex, RedisService redisService) {
         this.webClient = webClient;
         this.searchService = searchService;
-
+        this.imageVectorService = imageVectorService;
         this.pineconeIndex = pineconeIndex;
         this.redisService = redisService;
     }
 
+    @Override
     public List<Float> extractImageVector(MultipartFile file) {
-        try {
-            // Chuyển file thành byte array
-            byte[] fileBytes = file.getBytes();
-
-            // Dùng MultipartBodyBuilder để tạo request body
-            MultipartBodyBuilder bodyBuilder = new MultipartBodyBuilder();
-            bodyBuilder.part("file", new ByteArrayResource(fileBytes))
-                    .header("Content-Disposition", "form-data; name=file; filename=" + file.getOriginalFilename());
-
-            Map<String, Object> response = webClient.post()
-                    .uri(EXTRACT_VECTOR_URL) // URL của API vector extraction
-                    .contentType(MediaType.MULTIPART_FORM_DATA)
-                    .body(BodyInserters.fromMultipartData(bodyBuilder.build())) // Sử dụng MultipartBodyBuilder
-                    .retrieve()
-                    .onStatus(HttpStatusCode::isError, clientResponse ->
-                            clientResponse.bodyToMono(String.class)
-                                    .flatMap(errorMessage -> Mono.error(new ImageProcessingException("Image processing failed: " + errorMessage)))
-                    )
-                    .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
-                    })
-                    .block(); // Blocking call (có thể thay bằng async)
-
-            // Lấy vector từ response
-            if (response == null || !response.containsKey("vector")) {
-                throw new ImageProcessingException("No vector returned from image processing service");
-            }
-            List<Double> vectorDoubles = (List<Double>) response.get("vector");
-            List<Float> vectorFloats = vectorDoubles.stream()
-                    .map(Double::floatValue)  // Chuyển từng phần tử từ Double -> Float
-                    .collect(Collectors.toList());
-            return vectorFloats;
-        } catch (IOException e) {
-            throw new ImageProcessingException("Error reading file: " + e.getMessage());
-        }
+        return imageVectorService.extractImageVector(file);
     }
 
     public List<String> searchSimilarProducts(List<Float> imageVector) {
