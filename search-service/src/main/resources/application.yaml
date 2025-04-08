@@ -41,3 +41,6 @@ pinecone:
 logging:
   level:
     org.springframework.web: DEBUG
+image:
+  processing:
+    url: ${AI_SERVER_HOST}/extract-vector

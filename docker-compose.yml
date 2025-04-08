@@ -1,0 +1,8 @@
+services:
+  search-service:
+    image: search-service:1.0
+    build: .
+    ports:
+      - "8081:8081"  # Map container port 8081 to host port 8081
+    env_file:
+      - ./env/.env_search-service
