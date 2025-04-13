@@ -17,29 +17,29 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.filter.CorsFilter;
 
-    @Configuration
-    @EnableWebSecurity
-    @EnableMethodSecurity
-    public class SecurityConfig {
-        private final String[] PUBLIC_ENDPOINTS = {
+@Configuration
+@EnableWebSecurity
+@EnableMethodSecurity
+public class SecurityConfig {
+    private final String[] PUBLIC_ENDPOINTS = {
             "/users/**", "/auth/token", "/auth/introspect", "/auth/logout", "/auth/refresh",
-                "/swagger-ui/**",           // Swagger UI assets
-                "/v3/api-docs/**",
-                "/users/register"
-        };
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/users/register"
+    };
 
-        @Autowired
-        private CustomJwtDecoder customJwtDecoder;
+    @Autowired
+    private CustomJwtDecoder customJwtDecoder;
 
-        @Bean
-        public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
-            httpSecurity.authorizeHttpRequests(request -> request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS)
-                    .permitAll()
-                    .requestMatchers(HttpMethod.GET, PUBLIC_ENDPOINTS)
-                    .permitAll()
-                    .requestMatchers(HttpMethod.GET, "/users/**").permitAll()
-                    .anyRequest()
-                    .authenticated());
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
+        httpSecurity.authorizeHttpRequests(request -> request.requestMatchers(HttpMethod.POST, PUBLIC_ENDPOINTS)
+                .permitAll()
+                .requestMatchers(HttpMethod.GET, PUBLIC_ENDPOINTS)
+                .permitAll()
+                .requestMatchers(HttpMethod.GET, "/users/**").permitAll()
+                .anyRequest()
+                .authenticated());
 
         httpSecurity.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer
                         .decoder(customJwtDecoder)

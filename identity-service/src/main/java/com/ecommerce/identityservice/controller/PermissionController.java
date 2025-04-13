@@ -2,7 +2,10 @@ package com.ecommerce.identityservice.controller;
 
 import java.util.List;
 
+
 import com.ecommerce.identityservice.dto.response.ApiResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.ecommerce.identityservice.dto.request.PermissionRequest;
@@ -23,22 +26,26 @@ public class PermissionController {
     PermissionService permissionService;
 
     @PostMapping
-    ApiResponse<PermissionResponse> create(@RequestBody PermissionRequest request) {
-        return ApiResponse.<PermissionResponse>builder()
-                .result(permissionService.create(request))
-                .build();
+    public ResponseEntity<ApiResponse<PermissionResponse>> create(@RequestBody PermissionRequest request) {
+        PermissionResponse createdPermission = permissionService.create(request);
+        ApiResponse<PermissionResponse> response = new ApiResponse<>();
+        response.ok(createdPermission);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
-    ApiResponse<List<PermissionResponse>> getAll() {
-        return ApiResponse.<List<PermissionResponse>>builder()
-                .result(permissionService.getAll())
-                .build();
+    public ResponseEntity<ApiResponse<List<PermissionResponse>>> getAll() {
+        List<PermissionResponse> permissions = permissionService.getAll();
+        ApiResponse<List<PermissionResponse>> response = new ApiResponse<>();
+        response.ok(permissions);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{permission}")
-    ApiResponse<Void> delete(@PathVariable String permission) {
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String permission) {
         permissionService.delete(permission);
-        return ApiResponse.<Void>builder().build();
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.ok();
+        return ResponseEntity.ok(response);
     }
 }

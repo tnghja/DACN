@@ -1,20 +1,43 @@
 package com.ecommerce.identityservice.dto.response;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
+import com.ecommerce.identityservice.dto.response.StatusEnum;
+import lombok.Getter;
+import lombok.Setter;
 
-import lombok.*;
-import lombok.experimental.FieldDefaults;
+import java.util.Map;
 
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@FieldDefaults(level = AccessLevel.PRIVATE)
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@Setter
+@Getter
 public class ApiResponse<T> {
-    @Builder.Default
-    private int code = 200;
+    private StatusEnum status;
+    private T payload;
+    private Map<String, String> error;
+    private Map<String, Object> metadata;
 
-    private String message;
-    private T result;
+    public void ok() {
+        this.status = StatusEnum.SUCCESS;
+    }
+
+    public void ok(T data) {
+        this.status = StatusEnum.SUCCESS;
+        this.payload = data;
+    }
+
+    public void ok(T data, Map<String, Object> metadata) {
+        this.status = StatusEnum.SUCCESS;
+        this.payload = data;
+        this.metadata = metadata;
+    }
+
+    public void error(Map<String, String> error) {
+        this.status = StatusEnum.ERROR;
+        this.error = error;
+    }
+    public void error(Map<String, String> error, Map<String, Object> metadata) {
+        this.status = StatusEnum.ERROR;
+        this.error = error;
+        this.metadata=metadata;
+    }
+
 }
+

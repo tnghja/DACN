@@ -4,10 +4,8 @@ import java.text.ParseException;
 
 import com.ecommerce.identityservice.dto.request.*;
 import com.ecommerce.identityservice.dto.response.ApiResponse;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import com.ecommerce.identityservice.dto.response.AuthenticationResponse;
 import com.ecommerce.identityservice.dto.response.IntrospectResponse;
@@ -26,28 +24,38 @@ public class AuthenticationController {
     AuthenticationService authenticationService;
 
     @PostMapping("/token")
-    ApiResponse<AuthenticationResponse> authenticate(@RequestBody AuthenticationRequest request) {
-        var result = authenticationService.authenticate(request);
-        return ApiResponse.<AuthenticationResponse>builder().result(result).build();
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> authenticate(@RequestBody AuthenticationRequest request) {
+        AuthenticationResponse result = authenticationService.authenticate(request);
+        ApiResponse<AuthenticationResponse> response = new ApiResponse<>();
+        response.ok(result);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/introspect")
-    ApiResponse<IntrospectResponse> authenticate(@RequestBody IntrospectRequest request)
+    public ResponseEntity<ApiResponse<IntrospectResponse>> introspect(@RequestBody IntrospectRequest request)
             throws ParseException, JOSEException {
-        var result = authenticationService.introspect(request);
-        return ApiResponse.<IntrospectResponse>builder().result(result).build();
+        IntrospectResponse result = authenticationService.introspect(request);
+        ApiResponse<IntrospectResponse> response = new ApiResponse<>();
+        response.ok(result);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/refresh")
-    ApiResponse<AuthenticationResponse> authenticate(@RequestBody RefreshRequest request)
+    public ResponseEntity<ApiResponse<AuthenticationResponse>> refresh(@RequestBody RefreshRequest request)
             throws ParseException, JOSEException {
-        var result = authenticationService.refreshToken(request);
-        return ApiResponse.<AuthenticationResponse>builder().result(result).build();
+        AuthenticationResponse result = authenticationService.refreshToken(request);
+        ApiResponse<AuthenticationResponse> response = new ApiResponse<>();
+        response.ok(result);
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/logout")
-    ApiResponse<Void> logout(@RequestBody LogoutRequest request) throws ParseException, JOSEException {
+    public ResponseEntity<ApiResponse<Void>> logout(@RequestBody LogoutRequest request)
+            throws ParseException, JOSEException {
         authenticationService.logout(request);
-        return ApiResponse.<Void>builder().build();
+        ApiResponse<Void> response = new ApiResponse<>();
+
+        response.ok();
+        return ResponseEntity.ok(response);
     }
 }

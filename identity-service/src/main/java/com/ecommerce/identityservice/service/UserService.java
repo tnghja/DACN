@@ -11,7 +11,6 @@ import com.ecommerce.identityservice.exception.ErrorCode;
 import com.ecommerce.identityservice.mapper.UserMapper;
 import com.ecommerce.identityservice.repository.RoleRepository;
 import com.ecommerce.identityservice.repository.UserRepository;
-import com.ecommerce.identityservice.repository.httpClient.UserClient;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -38,7 +37,6 @@ public class UserService {
     RoleRepository roleRepository;
     UserMapper userMapper;
     PasswordEncoder passwordEncoder;
-    UserClient userClient;
 
     public UserResponse createUser(UserCreationRequest request) {
         User user = userMapper.toUser(request);
@@ -53,9 +51,8 @@ public class UserService {
             user = userRepository.save(user);
             UserProfileCreateRequest profileCreateRequest = new UserProfileCreateRequest();
             profileCreateRequest.setUserName(request.getUserName());
-            profileCreateRequest.setUserId(user.getId());
+            profileCreateRequest.setUserId(user.getUserId());
             profileCreateRequest.setEmail(request.getEmail());
-            var userProfileResponse = userClient.createUserProfile(profileCreateRequest);
         } catch (DataIntegrityViolationException exception) {
             throw new AppException(ErrorCode.USER_EXISTED);
         }

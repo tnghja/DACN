@@ -1,4 +1,4 @@
-package com.ecommerce.user.model.entity;
+package com.ecommerce.identityservice.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
