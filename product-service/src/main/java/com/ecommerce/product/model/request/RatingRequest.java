@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class RatingRequest {
     @NotNull
-    private Long userId;
+    private String userId;
 
     @NotNull
     private String productId;

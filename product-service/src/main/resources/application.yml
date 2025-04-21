@@ -1,18 +1,20 @@
 server:
-  port: 8088
+  port: ${PRODUCT_PORT:8088}
   servlet:
     context-path: /product
 
 spring:
   datasource:
-    url: jdbc:postgresql://yamanote.proxy.rlwy.net:19755/railway
-    username: postgres
-    password: sxSaLoNJMmZOofAcxwUFORnbLJOmxPuN
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/product}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:1234}
 
     driver-class-name: org.postgresql.Driver
 
   jpa:
-    hibernate:
-      ddl-auto: update
+      hibernate:
+        ddl-auto: update
 
-
+app:
+  services:
+    order: ${API_GATEWAY_ORDER_HOST:http://localhost:8082}/order

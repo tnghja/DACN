@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Data
 @Builder
+
 public class CheckoutResponse {
     private Double totalPrice;
     private Double discountPrice;

@@ -2,7 +2,6 @@ package com.ecommerce.product.service;
 
 
 import com.ecommerce.product.model.entity.Product;
-import com.ecommerce.product.model.entity.User;
 import com.recombee.api_client.RecombeeClient;
 import com.recombee.api_client.api_requests.Batch;
 import com.recombee.api_client.api_requests.Request;
@@ -69,42 +68,42 @@ public class RecombeeSyncService {
     }
 
 
-    public void syncUser(User user) {
-        try {
-            recombeeClient.send(new SetUserValues(
-                    String.format("user-%s", user.getId().toString()),
-                    new HashMap<String, Object>() {{
-                        put("name", user.getName());
-                        put("email", user.getEmail());
-                        put("phoneNumber", user.getPhoneNumber());
-                        put("avatarUrl", user.getAvatarUrl());
-                        put("createAt", user.getCreateAt());
-                    }}).setCascadeCreate(true));
-        } catch (ApiException e) {
-            e.printStackTrace();
-            // Handle the exception, e.g., log or use fallback
-        }
-    }
+//    public void syncUser(User user) {
+//        try {
+//            recombeeClient.send(new SetUserValues(
+//                    String.format("user-%s", user.getId().toString()),
+//                    new HashMap<String, Object>() {{
+//                        put("name", user.getName());
+//                        put("email", user.getEmail());
+//                        put("phoneNumber", user.getPhoneNumber());
+//                        put("avatarUrl", user.getAvatarUrl());
+//                        put("createAt", user.getCreateAt());
+//                    }}).setCascadeCreate(true));
+//        } catch (ApiException e) {
+//            e.printStackTrace();
+//            // Handle the exception, e.g., log or use fallback
+//        }
+
 
     // Đồng bộ danh sách user lên Recombee (batch)
-    public void batchSyncUsers(List<User> users) {
-        try {
-            List<Request> requests = users.stream()
-                    .map(user -> new SetUserValues(
-                            String.format("user-%s", user.getId().toString()),
-                            new HashMap<String, Object>() {{
-                                put("name", user.getName());
-                                put("email", user.getEmail());
-                                put("phoneNumber", user.getPhoneNumber());
-                                put("avatarUrl", user.getAvatarUrl());
-                                put("createAt", user.getCreateAt());
-                            }}).setCascadeCreate(true)).collect(Collectors.toList());
-
-
-            recombeeClient.send(new Batch(requests));
-        } catch (ApiException e) {
-            e.printStackTrace();
-            // Handle the exception, e.g., log or use fallback
-        }
-    }
+//    public void batchSyncUsers(List<User> users) {
+//        try {
+//            List<Request> requests = users.stream()
+//                    .map(user -> new SetUserValues(
+//                            String.format("user-%s", user.getId().toString()),
+//                            new HashMap<String, Object>() {{
+//                                put("name", user.getName());
+//                                put("email", user.getEmail());
+//                                put("phoneNumber", user.getPhoneNumber());
+//                                put("avatarUrl", user.getAvatarUrl());
+//                                put("createAt", user.getCreateAt());
+//                            }}).setCascadeCreate(true)).collect(Collectors.toList());
+//
+//
+//            recombeeClient.send(new Batch(requests));
+//        } catch (ApiException e) {
+//            e.printStackTrace();
+//            // Handle the exception, e.g., log or use fallback
+//        }
+//    }
 }

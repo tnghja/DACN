@@ -1,47 +1,49 @@
 package com.ecommerce.order.service.impl;
 
 import com.ecommerce.order.exception.NotFoundException;
+import com.ecommerce.order.exception.ProductNotFoundException;
 import com.ecommerce.order.exception.ValidationException;
 import com.ecommerce.order.model.dto.CustomerDTO;
 import com.ecommerce.order.model.dto.ProductDTO;
 import com.ecommerce.order.model.entity.Cart;
 import com.ecommerce.order.model.entity.CartItem;
+import com.ecommerce.order.model.entity.Product;
 import com.ecommerce.order.model.response.CartItemResponse;
 import com.ecommerce.order.model.response.CartResponse;
 import com.ecommerce.order.repository.CartItemRepository;
 import com.ecommerce.order.repository.CartRepository;
+import com.ecommerce.order.repository.ProductRepository;
 import com.ecommerce.order.repository.httpClient.ProductClient;
 import com.ecommerce.order.repository.httpClient.UserClient;
 import com.ecommerce.order.service.CartService;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.naming.ServiceUnavailableException;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class CartServiceImpl implements CartService {
+
+    private final CartRepository cartRepository;
+
+    private final CartItemRepository cartItemRepository;
+
+//    private final ProductClient productClient;
+
+    private final UserClient userClient;
 //    @Autowired
-//    private UserRepository userRepository;
-    @Autowired
-    private CartRepository cartRepository;
-    @Autowired
-    private CartItemRepository cartItemRepository;
-    @Autowired
-    private ProductClient productClient;
-    @Autowired
-    private UserClient userClient;
-//    @Autowired
-//    private ProductRepository productRepository;
-//    @Autowired
-//    private OrderRepository orderRepository;
-//    @Autowired
-//    private OrderItemRepository orderItemRepository;
+    private final ProductRepository productRepository;
+
     @Override
     public Cart getCartById(String userId) {
         return cartRepository.getCartNotPaidByCustomerId(userId);
@@ -56,8 +58,8 @@ public class CartServiceImpl implements CartService {
     @Override
     public Cart createCart(String customerId) {
         // Gọi User Service để validate user
-        CustomerDTO user = userClient.getCustomer(customerId)
-                .orElseThrow(() -> new NotFoundException("User not found with ID: " + customerId));
+//        CustomerDTO user = userClient.getCustomer(customerId)
+//                .orElseThrow(() -> new NotFoundException("User not found with ID: " + customerId));
 
         if (cartRepository.existsByCustomerId(customerId)) {
             throw new ValidationException("Cart already exists for user: " + customerId);
@@ -72,21 +74,18 @@ public class CartServiceImpl implements CartService {
     }
 
 
-    @CircuitBreaker(name = "productService", fallbackMethod = "addProductFallback")
     @Override
     public void addProductToCart(String userId, String productId, Integer quantity) {
-        // 1. Kiểm tra product tồn tại qua Product Service
-        ProductDTO product = productClient.getProduct(productId);
+        // 1. Get product details from LOCAL database
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found locally with ID: " + productId)); // Use local ProductNotFoundException
 
-        // 2. Kiểm tra số lượng tồn kho
-        if (product.getQuantity() < quantity) {
-            throw new ValidationException("Not enough stock for product: " + productId);
-        }
 
-        // 3. Xử lý logic giỏ hàng
+        // 2. Process cart logic (remains mostly the same)
         Cart cart = cartRepository.findByCustomerId(userId)
-                .orElseGet(() -> createCart(userId));
+                .orElseGet(() -> createCart(userId)); // createCart still needs UserClient check
 
+        // Use price from the local Product entity
         processCartItem(cart, productId, quantity, product.getPrice());
     }
 
@@ -96,6 +95,7 @@ public class CartServiceImpl implements CartService {
 
         if (existingItem != null) {
             existingItem.setQuantity(existingItem.getQuantity() + quantity);
+            cartItemRepository.save(existingItem);
         } else {
             CartItem newItem = CartItem.builder()
                     .cart(cart)
@@ -104,8 +104,11 @@ public class CartServiceImpl implements CartService {
                     .unitPrice(price)
                     .build();
             cartItemRepository.save(newItem);
+            if (cart.getCartItems() == null) {
+                cart.setCartItems(new ArrayList<>());
+            }
+            cart.getCartItems().add(newItem);
         }
-
         updateCartTotal(cart);
     }
     private void addProductFallback(Long userId, String productId, Integer quantity, Throwable t) throws ServiceUnavailableException {
@@ -129,43 +132,69 @@ public class CartServiceImpl implements CartService {
         Cart cart = cartRepository.findByCustomerId(customerId)
                 .orElseThrow(() -> new NotFoundException("Cart not found for user: " + customerId));
 
-        // Lấy danh sách product IDs trong giỏ
+        if (cart.getCartItems() == null || cart.getCartItems().isEmpty()) {
+            return CartResponse.builder()
+                    .cartId(cart.getCartId())
+                    .userId(cart.getCustomerId())
+                    .total(0.0)
+                    .products(Collections.emptyList())
+                    .build();
+        }
+
+        // Get list of product IDs in the cart
         List<String> productIds = cart.getCartItems().stream()
                 .map(CartItem::getProductId)
+                .distinct() // Avoid duplicate lookups if item added multiple times (though your model might prevent this)
                 .collect(Collectors.toList());
 
-        // Gọi batch API
-        List<ProductDTO> products = productClient.getProductsBatch(productIds);
+        // Fetch product details LOCALLY for all products in the cart
+        List<Product> products = productRepository.findAllById(productIds); // Efficiently fetches multiple products
 
+        // Build the response using local data
         return buildCartResponse(cart, products);
     }
-    private CartResponse buildCartResponse(Cart cart, List<ProductDTO> products) {
-        Map<String, ProductDTO> productMap = products.stream()
-                .collect(Collectors.toMap(ProductDTO::getId, Function.identity()));
+    // Modify buildCartResponse to use local Product entities
+    private CartResponse buildCartResponse(Cart cart, List<Product> products) {
+        // Create a map for easy lookup
+        Map<String, Product> productMap = products.stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
 
         List<CartItemResponse> items = cart.getCartItems().stream()
                 .map(item -> convertToItemResponse(item, productMap))
                 .collect(Collectors.toList());
 
+        // Recalculate total based on cart item prices (which were set when added)
+        // or ensure cart.getTotal() was updated correctly.
+        // Double calculatedTotal = calculateTotal(items); // Or use cart.getTotal() if reliable
+        cart.setTotal(calculateTotal(items)); // Ensure cart total is accurate
+        cartRepository.save(cart); // Persist updated total
+
+
         return CartResponse.builder()
                 .cartId(cart.getCartId())
                 .userId(cart.getCustomerId())
-                .total(calculateTotal(items))
+                .total(cart.getTotal())
                 .products(items)
                 .build();
     }
-    private CartItemResponse convertToItemResponse(CartItem item, Map<String, ProductDTO> productMap) {
-        ProductDTO product = productMap.getOrDefault(item.getProductId(),
-                ProductDTO.builder().id(item.getProductId()).build());
+    // Modify convertToItemResponse to use local Product entity
+    private CartItemResponse convertToItemResponse(CartItem item, Map<String, Product> productMap) {
+        // Get the local product data, handle case where it might be missing (though shouldn't happen ideally)
+        Product product = productMap.get(item.getProductId());
+        String productName = (product != null) ? product.getName() : "Product Name Unavailable";
+         String productCover = (product != null) ? product.getCover() : null;
+         String productBrand = (product != null) ? product.getBrand() : null;
+         Boolean isAvailable = product != null && product.getDeleteAt() == null; // Check if product is active
 
         return CartItemResponse.builder()
                 .id(item.getId())
                 .productId(item.getProductId())
-                .productName(product.getName())
-                .price(item.getUnitPrice())
+                .productName(productName) // Use name from local product
+                .price(item.getUnitPrice()) // Use price stored at time of adding to cart
                 .quantity(item.getQuantity())
-//                .total(item.getUnitPrice() * item.getQuantity())
-//                .imageUrl(product.getCover())
+                // .imageUrl(productCover) // Add other fields if needed
+                 .brand(productBrand)
+                 .isAvailable(isAvailable)
                 .build();
     }
 //    @Transactional
@@ -233,7 +262,9 @@ public class CartServiceImpl implements CartService {
 
         // 4. Remove item
         cartItemRepository.delete(cartItem);
-
+        if (cart.getCartItems() != null) {
+            cart.getCartItems().removeIf(item -> item.getProductId().equals(productId));
+        }
         // 5. Update total
         updateCartTotal(cart);
     }
@@ -245,6 +276,9 @@ public class CartServiceImpl implements CartService {
                 .orElseThrow(() -> new NotFoundException("Cart not found"));
 
         cartItemRepository.deleteByCart(cart);
+        if (cart.getCartItems() != null) {
+            cart.getCartItems().clear();
+        }
         cart.setTotal(0.0);
         cartRepository.save(cart);
     }
@@ -285,11 +319,14 @@ public class CartServiceImpl implements CartService {
         throw new ServiceUnavailableException("Product service unavailable");
     }
 
-    @CircuitBreaker(name = "productService", fallbackMethod = "updateQuantityFallback")
+    @Override
     @Transactional
+    // Remove @CircuitBreaker
     public void updateProductQuantityInCart(String userId, String productId, Integer quantity) {
-        // 1. Validate product existence
-        ProductDTO product = productClient.getProduct(productId);
+        // 1. Get product from LOCAL database (just to ensure it exists conceptually)
+        // We don't actually need its details like price here, as unitPrice is in CartItem
+        productRepository.findById(productId)
+                .orElseThrow(() -> new ProductNotFoundException("Product not found locally with ID: " + productId));
 
         // 2. Get cart
         Cart cart = cartRepository.findByCustomerId(userId)
@@ -299,19 +336,24 @@ public class CartServiceImpl implements CartService {
         CartItem cartItem = cartItemRepository.findByCartAndProductId(cart, productId)
                 .orElseThrow(() -> new NotFoundException("Product not in cart"));
 
-        // 4. Validate stock
-        if(quantity > product.getQuantity()) {
-            throw new ValidationException("Exceeds available stock");
-        }
+        // 4. REMOVED Stock Check: Inventory service handles this.
+        // if(quantity > product.getQuantity()) {
+        //     throw new ValidationException("Exceeds available stock");
+        // }
 
-        // 5. Update quantity
+        // 5. Update quantity (logic remains same)
         if(quantity <= 0) {
             cartItemRepository.delete(cartItem);
+            if (cart.getCartItems() != null) {
+                cart.getCartItems().removeIf(item -> item.getProductId().equals(productId));
+            }
         } else {
+            // NOTE: unitPrice is NOT updated here. It keeps the price from when it was first added.
             cartItem.setQuantity(quantity);
             cartItemRepository.save(cartItem);
         }
 
+        // 6. Update cart total
         updateCartTotal(cart);
     }
 

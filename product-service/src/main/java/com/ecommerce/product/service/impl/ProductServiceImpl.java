@@ -60,31 +60,54 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductDTO createProduct(ProductCreateRequest productCreateRequest) {
+        Product product = productMapper.toEntity(productCreateRequest);
 
-            Product product = productMapper.toEntity(productCreateRequest);
+        // Validate category existence
+        Category category = categoryRepository.findById(productCreateRequest.getCategoryId())
+                .orElseThrow(() -> new NotFoundException("Category not found with ID: " + productCreateRequest.getCategoryId()));
 
-            Category category = categoryRepository.findById(productCreateRequest.getCategoryId())
-                    .orElseThrow(() -> new NotFoundException("Category not found"));
+        product.setCategory(category); // Associate the category
 
-            product.setCategory(category); // Associate the category
-
-            Product createdProduct = productRepository.save(product);
-            return productMapper.toDTO(createdProduct);
-
-
+        Product createdProduct = productRepository.save(product);
+        return productMapper.toDTO(createdProduct);
     }
 
     @Override
     public Optional<ProductDTO> updateProduct(String id, ProductUpdateRequest productUpdateRequest) {
         return productRepository.findById(id).map(existingProduct -> {
-            Product updatedProduct = productMapper.toEntity(productUpdateRequest);
+            // Validate product is not deleted
+            if (existingProduct.getDeleteAt() != null) {
+                throw new IllegalStateException("Cannot update a deleted product");
+            }
 
-            // Preserve the existing ID, reviews, and deleteAt fields
-            updatedProduct.setId(existingProduct.getId());
-//            updatedProduct.setReviews(existingProduct.getReviews());
-            updatedProduct.setDeleteAt(existingProduct.getDeleteAt());
+            // PATCH-style update: only update fields present in ProductUpdateRequest
+            if (productUpdateRequest.getName() != null) {
+                existingProduct.setName(productUpdateRequest.getName());
+            }
+            if (productUpdateRequest.getBrand() != null) {
+                existingProduct.setBrand(productUpdateRequest.getBrand());
+            }
+            if (productUpdateRequest.getCover() != null) {
+                existingProduct.setCover(productUpdateRequest.getCover());
+            }
+            if (productUpdateRequest.getDescription() != null) {
+                existingProduct.setDescription(productUpdateRequest.getDescription());
+            }
+            if (productUpdateRequest.getPrice() != null) {
+                existingProduct.setPrice(productUpdateRequest.getPrice());
+            }
+            if (productUpdateRequest.getQuantity() != null) {
+                existingProduct.setQuantity(productUpdateRequest.getQuantity());
+            }
+            if (productUpdateRequest.getCategoryId() != null) {
+                Category category = categoryRepository.findById(productUpdateRequest.getCategoryId())
+                        .orElseThrow(() -> new NotFoundException("Category not found with ID: " + productUpdateRequest.getCategoryId()));
+                existingProduct.setCategory(category);
+            }
+            // Images, ratings, and rate are only updated by their own endpoints/processes
+            // (If you want to support patching images here, add logic for that)
 
-            Product savedProduct = productRepository.save(updatedProduct);
+            Product savedProduct = productRepository.save(existingProduct);
             return productMapper.toDTO(savedProduct);
         });
     }
@@ -92,11 +115,59 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public boolean deleteProduct(String id) {
         return productRepository.findById(id).map(product -> {
+            // Check if product is already deleted
+            if (product.getDeleteAt() != null) {
+                return false; // Product already deleted
+            }
+            
+            // Cleanup associated Cloudinary resources if images exist
+            if (product.getImages() != null && !product.getImages().isEmpty()) {
+                for (Image image : product.getImages()) {
+                    try {
+                        String imageUrl = image.getUrl();
+                        if (imageUrl != null && !imageUrl.isEmpty()) {
+                            // Extract public ID from the URL - this will depend on your URL structure
+                            // For example, if your URL is https://res.cloudinary.com/cloud-name/image/upload/v123456/my-image-id.jpg
+                            // the public ID would be my-image-id
+                            String publicId = getPublicIdFromUrl(imageUrl);
+                            cloudinaryService.deleteFile(publicId);
+                        }
+                    } catch (Exception e) {
+                        // Log error but continue with other images
+                        System.err.println("Failed to delete image: " + image.getUrl() + " - " + e.getMessage());
+                    }
+                }
+            }
+            
             // Mark the product as deleted by setting `deleteAt` timestamp
             product.setDeleteAt(java.time.LocalDateTime.now());
             productRepository.save(product);
+            
             return true;
         }).orElse(false);
+    }
+
+    private String getPublicIdFromUrl(String url) {
+        // Simple method to extract the public ID from a Cloudinary URL
+        // Modify this based on your actual URL structure
+        try {
+            if (url == null) return null;
+            
+            // Example implementation for URL like: https://res.cloudinary.com/cloud-name/image/upload/v123456/public-id.jpg
+            String[] parts = url.split("/");
+            if (parts.length > 0) {
+                String lastPart = parts[parts.length - 1];
+                // Remove file extension if present
+                int dotIndex = lastPart.lastIndexOf('.');
+                if (dotIndex > 0) {
+                    return lastPart.substring(0, dotIndex);
+                }
+                return lastPart;
+            }
+        } catch (Exception e) {
+            System.err.println("Error extracting public ID: " + e.getMessage());
+        }
+        return null;
     }
 
     @Async

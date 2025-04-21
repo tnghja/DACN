@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificate of Completion</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .certificate {
+            border: 10px solid #2c3e50;
+            padding: 30px;
+            margin: 20px auto;
+            width: 80%;
+            background-color: #ecf0f1;
+            text-align: center;
+        }
+        .certificate-header {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .certificate-body {
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+        .certificate-footer {
+            font-size: 1em;
+            margin-top: 20px;
+        }
+        .certificate-footer img {
+            width: 100px;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="certificate">
+    <div class="certificate-header">
+        Certificate of Completion
+    </div>
+    <div class="certificate-body">
+        <p>This is to certify that</p>
+        <h2><strong th:text="${studentName}"></strong></h2>
+        <p>has successfully completed the course</p>
+        <h3><strong th:text="${courseName}"></strong></h3>
+        <p>on</p>
+        <p><strong th:text="${completionDate}"></strong></p>
+    </div>
+    <div class="certificate-footer row">
+        <div class="col-md-6 text-left">
+            <p><strong>Instructor's Signature</strong></p>
+            <img src="https://as2.ftcdn.net/v2/jpg/07/11/64/87/1000_F_711648727_dzZmaEJvZFxquJz833LriwwRSLwdHgUA.webp" alt="Instructor's Signature">
+        </div>
+        <div class="col-md-6 text-right">
+            <p><strong>Institution's Seal</strong></p>
+            <img src="https://ur.uni.edu/sites/default/files/inline-uploads/uni_seal_primary.png" alt="Institution's Seal">
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+

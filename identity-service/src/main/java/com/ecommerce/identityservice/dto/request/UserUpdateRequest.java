@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.ecommerce.identityservice.validator.DobConstraint;
 
+import jakarta.validation.constraints.Size; // Added for potential password validation
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
@@ -14,12 +15,23 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserUpdateRequest {
-    String password;
-    String firstName;
-    String lastName;
 
+    // Optional: Keep password update here, but handle carefully in service
+    // Consider adding size/pattern constraints if kept
+    @Size(min = 6, message = "INVALID_PASSWORD") // Example constraint
+            String password; // Service should only update if this is not null/blank
+
+    // Allow updating userName
+    @Size(min = 4, message = "USERNAME_INVALID") // Example constraint
+            String userName;
+
+    // Renamed from dob to match entity field 'dateOfBirth'
     @DobConstraint(min = 18, message = "INVALID_DOB")
-    LocalDate dob;
+    LocalDate dateOfBirth;
 
-    List<String> roles;
+    // Fields matching User entity
+    String fullName;
+    String gender;
+    String phoneNumber; // Consider adding validation (e.g., @Pattern)
+
 }

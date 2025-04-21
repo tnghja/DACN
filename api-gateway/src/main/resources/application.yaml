@@ -2,23 +2,70 @@ server:
   port: 8888
 
 app:
-  api-prefix: /api
+  api-prefix: /api # Define the base path for API routes
+  services:
+    # Define downstream service locations with defaults
+    identity: ${IDENTITY_HOST:http://localhost:8091}
+    product : ${PRODUCT_HOST:http://localhost:8088}
+    order : ${ORDER_HOST:http://localhost:8082}
+    inventory : ${INVENTORY_HOST:http://localhost:8083}
+    recombee : ${REC_HOST:http://localhost:8084}
+    search : ${SEARCH_HOST:http://localhost:8081} 
+
+  security:
+    # --- Define paths that should bypass the AuthenticationFilter's token check ---
+    public-paths:
+      /api/identity/auth/** # Corrected: Added "- " for list item
+    user-paths:
+      /api/identity/users/register # Corrected: Added "- " for list item
+    password-paths:
+      /api/identity/password-reset/**
 
 spring:
   application:
     name: api-gateway
+
   cloud:
     gateway:
-        routes:
-          - id : identity-service
-            uri : {http://localhost:8080:IDENTITY_PORT}
-            predicates:
-              - Path=${app.api-prefix}/identity/**
-            filters:
-              - StripPrefix=1
-          - id: identity-service
-            uri: { http://localhost:8081:CUSTOMER_PORT }
-            predicates:
-              - Path=${app.api-prefix}/customer/**
-            filters:
-              - StripPrefix=1
+      routes:
+        - id: identity-service
+          # Added default value directly to uri for robustness
+          uri: ${app.services.identity:http://localhost:8081}
+          predicates:
+            - Path=${app.api-prefix}/identity/**
+          filters:
+            - StripPrefix=1
+        - id: product-service
+          uri: ${app.services.product:http://localhost:8088} # Added default
+          predicates:
+            - Path=${app.api-prefix}/product/**
+          filters:
+            - StripPrefix=1 # Strip /api/product
+
+        - id: order-service
+          uri: ${app.services.order:http://localhost:8082} # Added default
+          predicates:
+            - Path=${app.api-prefix}/order/**
+          filters:
+            - StripPrefix=1 # Strip /api/order
+
+        - id: inventory-service
+          uri: ${app.services.inventory:http://localhost:8083} # Added default
+          predicates:
+            - Path=${app.api-prefix}/inventory/**
+          filters:
+            - StripPrefix=1 # Corrected comment: Strip /api/inventory
+
+        - id: recombee-service
+          uri: ${app.services.recombee:http://localhost:8084} # Added default
+          predicates:
+            - Path=${app.api-prefix}/rec/**
+          filters:
+            - StripPrefix=1 # Strip /api/rec
+
+        - id: search-service
+          uri: ${app.services.search:http://localhost:8087} # Added default
+          predicates:
+            - Path=${app.api-prefix}/search/**
+          filters:
+            - StripPrefix=1 # Strip /api/search

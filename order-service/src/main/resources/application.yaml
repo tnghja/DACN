@@ -27,13 +27,15 @@ caching:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/order
-    username: postgres
-    password: 1234
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/order}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:1234}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
       ddl-auto: update
 server:
-  port: 8082
+  port: ${ORDER_PORT:8082}
+  servlet:
+    context-path: /order

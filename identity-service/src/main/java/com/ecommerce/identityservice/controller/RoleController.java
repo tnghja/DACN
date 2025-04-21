@@ -2,7 +2,10 @@ package com.ecommerce.identityservice.controller;
 
 import java.util.List;
 
+
 import com.ecommerce.identityservice.dto.response.ApiResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.ecommerce.identityservice.dto.request.RoleRequest;
@@ -23,22 +26,26 @@ public class RoleController {
     RoleService roleService;
 
     @PostMapping
-    ApiResponse<RoleResponse> create(@RequestBody RoleRequest request) {
-        return ApiResponse.<RoleResponse>builder()
-                .result(roleService.create(request))
-                .build();
+    public ResponseEntity<ApiResponse<RoleResponse>> create(@RequestBody RoleRequest request) {
+        RoleResponse createdRole = roleService.create(request);
+        ApiResponse<RoleResponse> response = new ApiResponse<>();
+        response.ok(createdRole);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
-    ApiResponse<List<RoleResponse>> getAll() {
-        return ApiResponse.<List<RoleResponse>>builder()
-                .result(roleService.getAll())
-                .build();
+    public ResponseEntity<ApiResponse<List<RoleResponse>>> getAll() {
+        List<RoleResponse> roles = roleService.getAll();
+        ApiResponse<List<RoleResponse>> response = new ApiResponse<>();
+        response.ok(roles);
+        return ResponseEntity.ok(response);
     }
 
     @DeleteMapping("/{role}")
-    ApiResponse<Void> delete(@PathVariable String role) {
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String role) {
         roleService.delete(role);
-        return ApiResponse.<Void>builder().build();
+        ApiResponse<Void> response = new ApiResponse<>();
+        response.ok();
+        return ResponseEntity.ok(response);
     }
 }
