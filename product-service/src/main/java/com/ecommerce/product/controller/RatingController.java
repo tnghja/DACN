@@ -22,7 +22,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/ratings")
 @RequiredArgsConstructor
-public class RatingController {
+public class  RatingController {
 
     private final RatingService ratingService;
 
@@ -33,7 +33,7 @@ public class RatingController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @PutMapping("/update")
+    @PatchMapping("/update")
     public ResponseEntity<ApiResponse<RatingCrudResponse>> updateRating(@RequestBody RatingRequest ratingRequest) {
         ApiResponse<RatingCrudResponse> response = new ApiResponse<>();
         response.ok(ratingService.updateRating(ratingRequest));
@@ -42,7 +42,7 @@ public class RatingController {
 
     @GetMapping("/user")
     public ResponseEntity<ApiResponse<RatingResponse>> getRatingByUserIdAndProductId(
-            @RequestParam("userId") Long userId,
+            @RequestParam("userId") String userId,
             @RequestParam("productId") String productId) {
         ApiResponse<RatingResponse> response = new ApiResponse<>();
         response.ok(ratingService.getRatingByUserIdAndProductId(userId, productId));

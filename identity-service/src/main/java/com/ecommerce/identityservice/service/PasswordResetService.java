@@ -54,7 +54,7 @@ public class PasswordResetService {
             resetTokens.put(token, new PasswordResetToken(email, expiryDate));
 
             // Send email with the reset link
-            return emailService.sendPasswordResetEmail(email);
+            return emailService.sendPasswordResetEmail(email, token);
         } catch (Exception e) {
             return false;
         }

@@ -7,6 +7,7 @@ import com.ecommerce.product.model.request.ProductCreateRequest;
 import com.ecommerce.product.model.request.ProductUpdateRequest;
 import com.ecommerce.product.model.response.ApiResponse;
 import com.ecommerce.product.service.ProductService;
+import jakarta.validation.Valid;
 import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -56,14 +57,14 @@ public class ProductController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<ProductDTO>> createProduct(@RequestBody ProductCreateRequest productCreateRequest) {
+    public ResponseEntity<ApiResponse<ProductDTO>> createProduct(@Valid @RequestBody ProductCreateRequest productCreateRequest) {
         ApiResponse<ProductDTO> response = new ApiResponse<>();
         response.ok(productService.createProduct(productCreateRequest));
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<ProductDTO>> updateProduct(@PathVariable String id, @RequestBody ProductUpdateRequest productUpdateRequest) {
+    @PatchMapping("/{id}")
+    public ResponseEntity<ApiResponse<ProductDTO>> updateProduct(@PathVariable String id, @Valid @RequestBody ProductUpdateRequest productUpdateRequest) {
         ApiResponse<ProductDTO> response = new ApiResponse<>();
         response.ok(productService.updateProduct(id, productUpdateRequest).orElse(null));
         return ResponseEntity.ok(response);

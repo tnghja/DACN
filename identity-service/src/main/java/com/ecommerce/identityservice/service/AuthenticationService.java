@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import com.ecommerce.identityservice.dto.request.IntrospectRequest;
@@ -57,19 +58,32 @@ public class AuthenticationService {
     @Value("${jwt.refreshable-duration}")
     protected long REFRESHABLE_DURATION;
 
+    @Transactional(readOnly = true) // Keep if using Option 1 from previous fix
     public IntrospectResponse introspect(IntrospectRequest request) throws JOSEException, ParseException {
         var token = request.getToken();
         boolean isValid = true;
 
         try {
+            // verifyToken might throw AppException, ParseException, or JOSEException
             verifyToken(token, false);
         } catch (AppException e) {
+            // Catches our custom authentication/validation errors (like invalidated token)
+            log.warn("Introspection failed: {}", e.getMessage());
+            isValid = false;
+        } catch (ParseException e) {
+            // Catches errors during SignedJWT.parse() if the token format is invalid
+            log.warn("Introspection failed due to invalid token format: {}", e.getMessage());
+            isValid = false;
+        } catch (JOSEException e) {
+            // Catches errors during signature verification (e.g., MACVerifier failure)
+            log.warn("Introspection failed due to JOSE verification error: {}", e.getMessage());
             isValid = false;
         }
 
+
         return IntrospectResponse.builder().valid(isValid).build();
     }
-
+    @Transactional(readOnly = true)
     public AuthenticationResponse authenticate(AuthenticationRequest request) {
         PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
         var user = userRepository
@@ -96,13 +110,33 @@ public class AuthenticationService {
                     InvalidatedToken.builder().id(jit).expiryTime(expiryTime).build();
 
             invalidatedTokenRepository.save(invalidatedToken);
-        } catch (AppException exception) {
-            log.info("Token already expired");
+        } catch (AppException e) {
+
+            log.info("Logout attempt for already invalid/expired token: {}", e.getMessage());
+        } catch (ParseException | JOSEException e) {
+
+            log.warn("Logout attempt with malformed token or verification failure: {}", e.getMessage());
         }
+
     }
 
+    @Transactional(readOnly = true)
     public AuthenticationResponse refreshToken(RefreshRequest request) throws ParseException, JOSEException {
-        var signedJWT = verifyToken(request.getToken(), true);
+        SignedJWT signedJWT;
+        try {
+            // Attempt to verify the token, catching potential parsing/verification errors
+            signedJWT = verifyToken(request.getToken(), true);
+
+        } catch (AppException e) {
+            // If verifyToken itself throws AppException (e.g., expired, invalidated), rethrow it.
+            throw e;
+        } catch (ParseException | JOSEException e) {
+            // If parsing or signature verification fails, wrap in standard AppException
+            log.warn("Refresh token verification failed (parse/jose): {}", e.getMessage());
+            throw new AppException(ErrorCode.UNAUTHENTICATED);
+        }
+
+        // --- Token is verified and parsed successfully at this point ---
 
         var jit = signedJWT.getJWTClaimsSet().getJWTID();
         var expiryTime = signedJWT.getJWTClaimsSet().getExpirationTime();
@@ -112,21 +146,23 @@ public class AuthenticationService {
 
         invalidatedTokenRepository.save(invalidatedToken);
 
-        var email = signedJWT.getJWTClaimsSet().getSubject();
+        var userId = signedJWT.getJWTClaimsSet().getSubject();
 
         var user =
-                userRepository.findByEmail(email).orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED));
+                userRepository.findByUserId(userId)
+                        .orElseThrow(() -> new AppException(ErrorCode.UNAUTHENTICATED)); // Keep this check
 
         var token = generateToken(user);
 
         return AuthenticationResponse.builder().token(token).authenticated(true).build();
     }
 
+
     public String generateToken(User user) {
         JWSHeader header = new JWSHeader(JWSAlgorithm.HS512);
 
         JWTClaimsSet jwtClaimsSet = new JWTClaimsSet.Builder()
-                .subject(user.getEmail())
+                .subject(user.getUserId())
                 .issuer("ecommerce.com")
                 .issueTime(new Date())
                 .expirationTime(new Date(

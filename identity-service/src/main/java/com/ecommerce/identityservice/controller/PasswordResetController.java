@@ -13,7 +13,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/password-reset")
+@RequestMapping("/password-reset")
 @CrossOrigin(origins = "*")
 @SecurityRequirement(name = "bearerAuth")
 public class PasswordResetController {

@@ -66,7 +66,7 @@ public class UserController {
         return ResponseEntity.ok(response);
     }
 
-    @PutMapping("/update-profile")
+    @PatchMapping("/update-profile")
     public ResponseEntity<ApiResponse<UserResponse>> updateUserProfile(
             @RequestParam("userId") String userId,
             @RequestBody UserUpdateRequest request) {

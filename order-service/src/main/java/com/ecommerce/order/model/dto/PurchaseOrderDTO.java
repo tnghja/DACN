@@ -1,8 +1,8 @@
 package com.ecommerce.order.model.dto;
 
 
-
 import com.ecommerce.order.model.request.CheckoutRequest;
+import com.ecommerce.order.model.request.OrderDetailRequest;
 import com.ecommerce.order.model.response.CheckoutResponse;
 import lombok.Data;
 import jakarta.validation.constraints.NotNull;
@@ -15,4 +15,6 @@ public class PurchaseOrderDTO {
     String userId;
     @NotNull(message = "checkoutReq is mandatory")
     CheckoutRequest checkoutRequest;
+
+    OrderDetailRequest orderDetail;
 }

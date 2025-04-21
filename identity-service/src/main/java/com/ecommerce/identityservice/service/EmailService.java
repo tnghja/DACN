@@ -75,17 +75,15 @@ public class EmailService {
         }
     }
 
-    public Boolean sendPasswordResetEmail(String to) {
+    public Boolean sendPasswordResetEmail(String to, String token) {
         try {
             User user = userRepository.findByEmail(to)
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_EXISTED));
 
-            String token = authenticationService.generateToken(user);
-
             String subject = "Xác thực yêu cầu đặt lại mật khẩu";
             String body1 = "Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn. Để tiếp tục quá trình này, vui lòng nhấp vào nút dưới đây:";
             String body2 = "Nếu bạn không yêu cầu đặt lại mật khẩu, bạn có thể bỏ qua email này.";
-            String link = PREFIX + "/api/password-reset/confirm?token=" + token;
+            String link = PREFIX + "/password-reset/validate-token?token=" + token;
 
             return sendHtmlEmailWithButton(to, subject, body1, body2, link);
         } catch (Exception e) {

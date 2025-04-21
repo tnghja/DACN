@@ -22,9 +22,8 @@ public class Rating {
     private Integer rate;
     private LocalDateTime createAt;
 
-    @ManyToOne
-    @JoinColumn(name = "customer_id")
-    private Customer customer;
+
+    private String customerId;
 
     @ManyToOne
     @JoinColumn(name = "product_id")

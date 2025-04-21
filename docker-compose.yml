@@ -1,0 +1,91 @@
+services:
+  api-gateway:
+    image: tnghja/api-gateway
+    container_name: api-gateway-container
+    ports:
+      - "${EX_API_GATEWAY_PORT}:${API_GATEWAY_PORT}" # <-- Set in .env (e.g. 8888)
+    depends_on:
+      - identity-service
+      - inventory-service
+      - order-service
+      - product-service
+    restart: always
+    environment:
+      IDENTITY_HOST: ${API_GATEWAY_IDENTITY_HOST}
+      PRODUCT_HOST: ${API_GATEWAY_PRODUCT_HOST}
+      ORDER_HOST: ${API_GATEWAY_ORDER_HOST}
+      INVENTORY_HOST: ${API_GATEWAY_INVENTORY_HOST}
+    networks:
+      - microservice-network
+
+  identity-service:
+    image: tnghja/identity-service
+    container_name: identity-service-container
+    expose:
+      - "${IDENTITY_PORT}"
+    ports:
+      - "${EX_IDENTITY_PORT}:${IDENTITY_PORT}"
+    restart: always
+    environment:
+      IDENTITY_PORT: ${IDENTITY_PORT}
+      DB_URL: ${IDENTITY_DB_URL}
+      DB_USERNAME: ${IDENTITY_DB_USERNAME}
+      DB_PASSWORD: ${IDENTITY_DB_PASSWORD}
+      BACKEND_HOST: ${API_GATEWAY_HOST}
+    networks:
+      - microservice-network
+
+  inventory-service:
+    image: tnghja/inventory-service
+    container_name: inventory-service-container
+    expose:
+      - "${INVENTORY_PORT}"
+    ports:
+      - "${EX_INVENTORY_PORT}:${INVENTORY_PORT}"
+    restart: always
+    environment:
+      INVENTORY_PORT: ${INVENTORY_PORT}
+      DB_URL: ${INVENTORY_DB_URL}
+      DB_USERNAME: ${INVENTORY_DB_USERNAME}
+      DB_PASSWORD: ${INVENTORY_DB_PASSWORD}
+      KAFKA_HOST: ${KAFKA_HOST}
+    networks:
+      - microservice-network
+
+  order-service:
+    image: tnghja/order-service
+    container_name: order-service-container
+    expose:
+      - "${ORDER_PORT}"
+    ports:
+      - "${EX_ORDER_PORT}:${ORDER_PORT}"
+    restart: always
+    environment:
+      ORDER_PORT: ${ORDER_PORT}
+      DB_URL: ${ORDER_DB_URL}
+      DB_USERNAME: ${ORDER_DB_USERNAME}
+      DB_PASSWORD: ${ORDER_DB_PASSWORD}
+      KAFKA_HOST: ${KAFKA_HOST}
+    networks:
+      - microservice-network
+
+  product-service:
+    image: tnghja/product-service
+    container_name: product-service-container
+    expose:
+      - "${PRODUCT_PORT}"
+    ports:
+      - "${EX_PRODUCT_PORT}:${PRODUCT_PORT}"
+    restart: always
+    environment:
+      PRODUCT_PORT: ${PRODUCT_PORT}
+      DB_URL: ${PRODUCT_DB_URL}
+      DB_USERNAME: ${PRODUCT_DB_USERNAME}
+      DB_PASSWORD: ${PRODUCT_DB_PASSWORD}
+      FE_HOST: ${PRODUCT_FE_HOST}
+    networks:
+      - microservice-network
+
+networks:
+  microservice-network:
+    driver: bridge

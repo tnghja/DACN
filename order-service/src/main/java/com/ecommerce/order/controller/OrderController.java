@@ -2,10 +2,12 @@ package com.ecommerce.order.controller;
 
 import com.ecommerce.order.model.dto.PurchaseOrderDTO;
 import com.ecommerce.order.model.entity.Order;
+import com.ecommerce.order.model.entity.PaymentStatus;
 import com.ecommerce.order.model.request.CheckoutRequest;
 import com.ecommerce.order.model.response.ApiResponse;
 import com.ecommerce.order.model.response.CheckoutResponse;
 import com.ecommerce.order.model.response.PaymentResponse;
+import com.ecommerce.order.repository.OrderRepository;
 import com.ecommerce.order.service.OrderService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -21,6 +23,9 @@ import java.util.Map;
 public class OrderController {
     @Autowired
     private OrderService orderService;
+    @Autowired
+    private OrderRepository orderRepository;
+
     // Checkout Order
     @PostMapping("/checkout")
     public ResponseEntity<ApiResponse<CheckoutResponse>> checkoutOrder(@RequestBody @Valid CheckoutRequest checkoutRequest) {
@@ -38,12 +43,21 @@ public class OrderController {
 //        response.ok(order);
 //        return ResponseEntity.ok(response);
 //    }
+    //Place order
+    @PostMapping("/placeOrder")
+    public ResponseEntity<ApiResponse<Order>> placeOrder(
+            @Valid @RequestBody PurchaseOrderDTO purchaseOrderDTO) {
+        Order orderResponse = orderService.placeOrder(purchaseOrderDTO);
+        ApiResponse<Order> response = new ApiResponse<>();
+        response.ok(orderResponse);
+        return ResponseEntity.ok(response);
+    }
 
     // Process Payment
     @PostMapping("/processingPurchase")
     public ResponseEntity<ApiResponse<PaymentResponse.VNPayResponse>> processPurchase(
-            @Valid @RequestBody PurchaseOrderDTO purchaseOrderDTO, HttpServletRequest request) {
-        PaymentResponse.VNPayResponse paymentResponse = orderService.processingPurchaseOrder(purchaseOrderDTO, request);
+            @Valid @RequestBody Long orderId, HttpServletRequest request) {
+        PaymentResponse.VNPayResponse paymentResponse = orderService.processingPurchaseOrder(orderId, request);
         ApiResponse<PaymentResponse.VNPayResponse> response = new ApiResponse<>();
         response.ok(paymentResponse);
         return ResponseEntity.ok(response);
@@ -83,5 +97,14 @@ public class OrderController {
         ApiResponse<List<Order>> response = new ApiResponse<>();
         response.ok(orders);
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/check-order/{userId}/{productId}/{paymentStatus}")
+    boolean existsByCustomerIdAndOrderItemsProductIdAndStatus(
+            @PathVariable("userId") String userId,
+            @PathVariable("productId") String productId,
+            @PathVariable("paymentStatus") PaymentStatus paymentStatus
+    ) {
+        return orderRepository.existsByUserIdAndOrderItemsProductIdAndStatus(userId,productId,paymentStatus);
     }
 }

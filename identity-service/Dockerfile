@@ -3,10 +3,8 @@
 # Run stage
 FROM openjdk:21
 WORKDIR /app
-COPY  target/identity-0.0.1-SNAPSHOT.jar identity-service.jar
+COPY  target/identity-service-0.0.1.jar identity-service.jar
 
-# Expose app port
-EXPOSE 8083
 
 # Run the application
 ENTRYPOINT ["java", "-jar", "identity-service.jar"]

@@ -59,18 +59,23 @@ public class CategoryServiceImpl implements CategoryService {
     public CategoryDTO updateCategory(Long id, CategoryDTO categoryDTO) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Category not found with id: " + id));
-        Category parentCategory = null;
-        if (categoryDTO.getParentId() != null) {
-            parentCategory = categoryRepository.findById(categoryDTO.getParentId())
-                    .orElseThrow(() -> new NotFoundException("Parent category not found with id: " + categoryDTO.getParentId()));
+
+        if (categoryDTO.getName() != null) {
+            category.setName(categoryDTO.getName());
         }
-        category.setName(categoryDTO.getName());
-        category.setParentCategory(parentCategory);
+
+        if (categoryDTO.getParentId() != null) {
+            Category parentCategory = categoryRepository.findById(categoryDTO.getParentId())
+                    .orElseThrow(() -> new NotFoundException("Parent category not found with id: " + categoryDTO.getParentId()));
+            category.setParentCategory(parentCategory);
+        }
+
         category = categoryRepository.save(category);
+
         return CategoryDTO.builder()
                 .id(category.getId())
                 .name(category.getName())
-                .parentId(parentCategory != null ? parentCategory.getId() : null)
+                .parentId(category.getParentCategory() != null ? category.getParentCategory().getId() : null)
                 .build();
     }
 
