@@ -1,6 +1,7 @@
 package com.ecommerce.recombee_service.service.impl;
 
 import com.ecommerce.recombee_service.exception.RecombeeException;
+import com.ecommerce.recombee_service.model.entity.request.InteractionBatchRequest;
 import com.ecommerce.recombee_service.model.entity.request.InteractionRequest;
 import com.recombee.api_client.RecombeeClient;
 import com.recombee.api_client.api_requests.AddDetailView;
@@ -17,6 +18,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
 
@@ -34,14 +36,17 @@ class RecombeeServiceImplTest {
     private RecombeeServiceImpl recombeeService;
 
     private InteractionRequest interactionRequest;
-    private List<InteractionRequest> batchRequests;
+    private InteractionBatchRequest batchRequests;
 
     @BeforeEach
     void setUp() {
         interactionRequest = new InteractionRequest("user123", "item456");
-        batchRequests = Arrays.asList(
-                new InteractionRequest("user123", "item456"),
-                new InteractionRequest("user123", "item789")
+        batchRequests = new InteractionBatchRequest(
+                "user123",
+                Arrays.asList(
+                        "item456",
+                        "item789"
+                )
         );
     }
 

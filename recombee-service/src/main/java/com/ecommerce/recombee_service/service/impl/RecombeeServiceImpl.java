@@ -1,6 +1,7 @@
 package com.ecommerce.recombee_service.service.impl;
 
 import com.ecommerce.recombee_service.exception.RecombeeException;
+import com.ecommerce.recombee_service.model.entity.request.InteractionBatchRequest;
 import com.ecommerce.recombee_service.model.entity.request.InteractionRequest;
 import com.ecommerce.recombee_service.service.RecombeeService;
 import com.recombee.api_client.RecombeeClient;
@@ -12,7 +13,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,15 +42,15 @@ public class RecombeeServiceImpl implements RecombeeService {
         }
     }
 
-    public void sendBatchInteractions(List<InteractionRequest> requests) {
+    public void sendBatchInteractions(InteractionBatchRequest requests) {
         try {
             List<Request> batch = new ArrayList<>();
             
-            for (InteractionRequest request : requests) {
-                batch.add(new AddPurchase(request.getUserId(), request.getItemId())
+            for (String itemId : requests.getItemIds()) {
+                batch.add(new AddDetailView(requests.getUserId(), itemId)
                         .setCascadeCreate(true));
             }
-            
+
             client.send(new Batch(batch));
         } catch (ApiException e) {
             throw new RecombeeException(e.getMessage());

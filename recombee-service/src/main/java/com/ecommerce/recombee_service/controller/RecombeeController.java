@@ -1,5 +1,6 @@
 package com.ecommerce.recombee_service.controller;
 
+import com.ecommerce.recombee_service.model.entity.request.InteractionBatchRequest;
 import com.ecommerce.recombee_service.model.entity.request.InteractionRequest;
 import com.ecommerce.recombee_service.model.response.ApiResponse;
 import com.ecommerce.recombee_service.service.RecombeeService;
@@ -42,7 +43,7 @@ public class RecombeeController {
     }
 
     @PostMapping("/batch-purchase")
-    public ResponseEntity<ApiResponse<Void>> batchPurchase(@Valid @RequestBody List<InteractionRequest> requests) {
+    public ResponseEntity<ApiResponse<Void>> batchPurchase(@Valid @RequestBody InteractionBatchRequest requests) {
         recombeeService.sendBatchInteractions(requests);
         ApiResponse<Void> response = new ApiResponse<>();
         response.ok();
