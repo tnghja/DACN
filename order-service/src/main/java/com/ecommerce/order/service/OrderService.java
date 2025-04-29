@@ -18,6 +18,12 @@ public interface OrderService {
     CheckoutResponse checkoutOrder(CheckoutRequest request);
 
 
+    @Transactional(rollbackFor = Exception.class)
+    PaymentResponse.VNPayResponse processingPurchaseOrder(Long orderId, HttpServletRequest request);
+
+    @Transactional(rollbackFor = Exception.class)
+    Order placeOrder(PurchaseOrderDTO dto);
+
     void completeOrder(Map<String, String> reqParams);
 
     void cancelOrder(Long orderId);
@@ -30,5 +36,4 @@ public interface OrderService {
     @Transactional
     Order placeOrder(String userId, Long couponId);
 
-    PaymentResponse.VNPayResponse processingPurchaseOrder(PurchaseOrderDTO purchaseOrderDTO, HttpServletRequest request);
 }

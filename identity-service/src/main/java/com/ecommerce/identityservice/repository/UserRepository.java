@@ -10,6 +10,6 @@ import com.ecommerce.identityservice.entity.User;
 @Repository
 public interface UserRepository extends JpaRepository<User, String> {
     boolean existsByEmail(String username);
-
+    Optional<User> findByUserId(String userId);
     Optional<User> findByEmail(String username);
 }

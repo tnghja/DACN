@@ -35,11 +35,11 @@ public class Product {
     private Double rate; // Đánh giá trung bình
     private LocalDateTime deleteAt;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "product_id", nullable = false)
     private List<Image> images; // Danh sách đường dẫn ảnh
     @JsonIgnore // Bỏ qua trường này khi serialize
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "product")
     private List<Rating> ratings;
 
 //    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)

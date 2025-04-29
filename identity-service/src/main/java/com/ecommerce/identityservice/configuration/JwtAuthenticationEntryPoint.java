@@ -1,8 +1,10 @@
 package com.ecommerce.identityservice.configuration;
 
 import java.io.IOException;
+import java.util.Map;
 
 import com.ecommerce.identityservice.dto.response.ApiResponse;
+import com.ecommerce.identityservice.dto.response.StatusEnum;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -24,13 +26,13 @@ public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
         response.setStatus(errorCode.getStatusCode().value());
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-        ApiResponse<?> apiResponse = ApiResponse.builder()
-                .code(errorCode.getCode())
-                .message(errorCode.getMessage())
-                .build();
+        ApiResponse<?> apiResponse = new ApiResponse<>();
+        apiResponse.error(Map.of(
+                "code", String.valueOf(errorCode.getCode()),  // Convert to String
+                "message", errorCode.getMessage()
+        ));
 
         ObjectMapper objectMapper = new ObjectMapper();
-
         response.getWriter().write(objectMapper.writeValueAsString(apiResponse));
         response.flushBuffer();
     }

@@ -24,5 +24,5 @@ public class Cart {
     private String customerId;
     @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
     @ToString.Exclude
-    private List<CartItem> cartItems; // Thay thế ManyToMany bằng List<CartItem>
+    private List<CartItem> cartItems;
 }

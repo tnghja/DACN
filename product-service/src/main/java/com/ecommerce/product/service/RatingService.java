@@ -13,7 +13,7 @@ public interface RatingService {
     @Transactional
     RatingCrudResponse updateRating(RatingRequest ratingRequest);
 
-    RatingResponse getRatingByUserIdAndProductId(Long userId, String productId);
+    RatingResponse getRatingByUserIdAndProductId(String userId, String productId);
 
     Page<RatingResponse> getRatingsByProductId(String productId, int page, int size);
 }

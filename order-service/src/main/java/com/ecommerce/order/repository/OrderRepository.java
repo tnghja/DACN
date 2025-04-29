@@ -9,10 +9,10 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface OrderRepository extends JpaRepository<Order, Long> {
-//    @Query("SELECT o FROM Order o WHERE o.customer.id = :userId")
+   @Query("SELECT o FROM Order o WHERE o.userId = :userId")
     List<Order> findByUserId(@Param("userId") String userId);
 
-//    boolean existsByCustomerIdAndOrderItemsProductIdAndStatus(Long customerId, String productId, PaymentStatus status);
+    boolean existsByUserIdAndOrderItemsProductIdAndStatus(String userId, String productId, PaymentStatus status);
 
 }
 
