@@ -36,8 +36,8 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
 pinecone:
-  api-key: pcsk_KUtgS_DZYC6qjTGi8VoK2rEEX99z41P48ug7oX2gAM6XbJvMMqm8aRkyfmzEfHVXeRpLB
-  index-name: image-search
+  api-key: ${PINECONE_API_KEY:pcsk_KUtgS_DZYC6qjTGi8VoK2rEEX99z41P48ug7oX2gAM6XbJvMMqm8aRkyfmzEfHVXeRpLB}
+  index-name: ${PINECONE_INDEX_NAME:image-search}
 logging:
   level:
     org.springframework.web: DEBUG

@@ -15,18 +15,10 @@ import com.google.protobuf.Struct;
 import io.pinecone.clients.Index;
 import io.pinecone.unsigned_indices_model.QueryResponseWithUnsignedIndices;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
-import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -80,6 +72,7 @@ public class ImageSearchServiceImpl implements ImageSearchService {
                         return "";
                     })
                     .filter(productId -> !productId.isEmpty()) // Bỏ qua giá trị rỗng
+                    .distinct()  // Bỏ qua các giá trị trùng nhau
                     .collect(Collectors.toList());
         } catch (Exception e) {
             throw new ImageProcessingException("Error searching similar products: " + e.getMessage());
