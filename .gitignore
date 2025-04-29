@@ -3,3 +3,6 @@
 **/.vscode/
 **/.env
 env
+**/.env_*
+.env
+

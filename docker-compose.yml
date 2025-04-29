@@ -1,6 +1,175 @@
+# docker-compose.yml
+version: '3.8'
+
+
+volumes:
+  postgres_data:
+    name: imagesearch_postgres_data
+  es_data:
+    driver: local
+
 services:
+  # ================= INFRA =================
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: zookeeper
+    restart: always
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - microservice-network
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: kafka
+    restart: always
+    depends_on:
+      - zookeeper
+    ports:
+      - "0.0.0.0:9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - microservice-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui
+    container_name: kafka-ui
+    restart: always
+    depends_on:
+      - kafka
+    ports:
+      - "0.0.0.0:8080:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: "local"
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:29092"
+    networks:
+      - microservice-network
+
+  kafka-connect:
+    image: debezium/connect:3.0.0.Final
+    container_name: kafka-connect
+    restart: always
+    depends_on:
+      - kafka
+    ports:
+      - "0.0.0.0:8083:8083"
+    environment:
+      BOOTSTRAP_SERVERS: kafka:29092
+      GROUP_ID: "debezium-connect"
+      CONFIG_STORAGE_TOPIC: "connect-configs"
+      OFFSET_STORAGE_TOPIC: "connect-offsets"
+      STATUS_STORAGE_TOPIC: "connect-status"
+      KEY_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      VALUE_CONVERTER: "org.apache.kafka.connect.json.JsonConverter"
+      VALUE_CONVERTER_SCHEMAS_ENABLE: "false"
+      PLUGIN_PATH: "/kafka/connect"
+    volumes:
+      - ./kafka-connect-plugins:/kafka/connect
+    networks:
+      - microservice-network
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    ports:
+      - "0.0.0.0:5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: t12987hjqw98
+      POSTGRES_DB: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    command: >
+      postgres -c wal_level=logical -c max_replication_slots=5 -c max_wal_senders=5
+    networks:
+      - microservice-network
+  elasticsearch:
+    image: elasticsearch:8.17.5
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.ml.enabled=false
+      - xpack.watcher.enabled=false
+      - xpack.monitoring.collection.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - microservice-network
+    restart: always
+    
+    #  kibana:
+    #    image: docker.elastic.co/kibana/kibana:8.11.3
+    #    container_name: kibana
+    #    ports:
+    #      - "5601:5601"
+    #    environment:
+    #      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+    #    depends_on:
+    #      - elasticsearch
+
+    # ================= SERVICES =================
+  extract-model:
+    image: dinhthai/extract-model:1.2
+    container_name: extract-model
+    ports:
+      - "8000:8000"
+    networks:
+      - microservice-network
+
+  consumer-images:
+    image: dinhthai/consumer-images:1.1
+    container_name: consumer-images
+    depends_on:
+      - extract-model
+    environment:
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - ./service-env/.env_consumer
+    networks:
+      - microservice-network
+
+  search-service:
+    image: dinhthai/search-service:1.2
+    container_name: search-service
+    depends_on:
+      - postgres
+      - elasticsearch
+    ports:
+      - "3006:8081"
+    env_file:
+      - ./service-env/.env_search-service
+    networks:
+      - microservice-network
+
+  recombee-service:
+    image: dinhthai/recombee-service:1.1
+    container_name: recombee-service
+    ports:
+      - "3001:8081"
+    env_file:
+      - ./service-env/.env_recombee-service
+    networks:
+      - microservice-network
+
   api-gateway:
-    image: tnghja/api-gateway
+    image: dinhthai/api-gateway:1.4
     container_name: api-gateway-container
     ports:
       - "${EX_API_GATEWAY_PORT}:${API_GATEWAY_PORT}" # <-- Set in .env (e.g. 8888)
@@ -15,11 +184,13 @@ services:
       PRODUCT_HOST: ${API_GATEWAY_PRODUCT_HOST}
       ORDER_HOST: ${API_GATEWAY_ORDER_HOST}
       INVENTORY_HOST: ${API_GATEWAY_INVENTORY_HOST}
+      SEARCH_HOST: ${API_GATEWAY_SEARCH_HOST}
+      REC_HOST: ${API_GATEWAY_REC_HOST}
     networks:
       - microservice-network
 
   identity-service:
-    image: tnghja/identity-service
+    image: tnghja/identity-service:1.0
     container_name: identity-service-container
     expose:
       - "${IDENTITY_PORT}"
@@ -36,7 +207,7 @@ services:
       - microservice-network
 
   inventory-service:
-    image: tnghja/inventory-service
+    image: tnghja/inventory-service:1.0
     container_name: inventory-service-container
     expose:
       - "${INVENTORY_PORT}"
@@ -53,7 +224,7 @@ services:
       - microservice-network
 
   order-service:
-    image: tnghja/order-service
+    image: tnghja/order-service:1.0
     container_name: order-service-container
     expose:
       - "${ORDER_PORT}"
@@ -70,7 +241,7 @@ services:
       - microservice-network
 
   product-service:
-    image: tnghja/product-service
+    image: tnghja/product-service:1.0
     container_name: product-service-container
     expose:
       - "${PRODUCT_PORT}"
@@ -87,5 +258,8 @@ services:
       - microservice-network
 
 networks:
-  microservice-network:
+  microservice-network: # Define a custom network for the services
     driver: bridge
+
+    
+
