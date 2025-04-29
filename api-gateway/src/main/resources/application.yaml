@@ -1,71 +1,90 @@
+# Server configuration
 server:
-  port: 8888
-
+  port: 8888 # Port the gateway will run on
+# Application specific configuration
 app:
-  api-prefix: /api # Define the base path for API routes
+  api-prefix: /api
   services:
-    # Define downstream service locations with defaults
-    identity: ${IDENTITY_HOST:http://localhost:8091}
-    product : ${PRODUCT_HOST:http://localhost:8088}
-    order : ${ORDER_HOST:http://localhost:8082}
-    inventory : ${INVENTORY_HOST:http://localhost:8083}
-    recombee : ${REC_HOST:http://localhost:8084}
-    search : ${SEARCH_HOST:http://localhost:8081} 
-
+    # Define downstream microservice locations with environment variable overrides and defaults
+    # Format: ${ENVIRONMENT_VARIABLE_NAME:defaultValue}
+    identity: ${IDENTITY_HOST:http://localhost:8091}   # Identity service location
+    product : ${PRODUCT_HOST:http://localhost:8088}   # Product service location
+    order : ${ORDER_HOST:http://localhost:8082}     # Order service location
+    inventory : ${INVENTORY_HOST:http://localhost:8083} # Inventory service location
+    recombee : ${REC_HOST:http://localhost:8084}    # Recombee (recommendation) service location
+    search : ${SEARCH_HOST:http://localhost:8081}    # Search service location
   security:
-    # --- Define paths that should bypass the AuthenticationFilter's token check ---
+    product-paths:
+      /api/product/**
     public-paths:
-      /api/identity/auth/** # Corrected: Added "- " for list item
+      /api/identity/auth/** # Authentication endpoints (login, register, refresh token)
+    search-paths:
+      /api/search-service/**
+    recombee-paths:
+      /api/recombee-service/**
     user-paths:
-      /api/identity/users/register # Corrected: Added "- " for list item
+      /api/identity/users/create
     password-paths:
       /api/identity/password-reset/**
-
 spring:
   application:
-    name: api-gateway
+    name: api-gateway # Name of the application
 
   cloud:
     gateway:
       routes:
+        # Route requests for the Identity Service
         - id: identity-service
-          # Added default value directly to uri for robustness
-          uri: ${app.services.identity:http://localhost:8081}
+          uri: ${app.services.identity} # Use variable defined in app.services
           predicates:
+            # Match requests whose path starts with /api/identity/
             - Path=${app.api-prefix}/identity/**
           filters:
-            - StripPrefix=1
+            # Remove the first path segment (/api) before forwarding
+            # Corrected: Should strip /identity, not just /api if prefix is /api
+            # If api-prefix is /api, StripPrefix=1 removes /api
+            # If you want to remove /api/identity, use StripPrefix=2
+            - StripPrefix=2 # Strips /api/identity
+
+        # Route requests for the Product Service
         - id: product-service
-          uri: ${app.services.product:http://localhost:8088} # Added default
+          uri: ${app.services.product}
           predicates:
             - Path=${app.api-prefix}/product/**
           filters:
-            - StripPrefix=1 # Strip /api/product
+            - StripPrefix=2 # Strips /api/product
 
+        # Route requests for the Order Service
         - id: order-service
-          uri: ${app.services.order:http://localhost:8082} # Added default
+          uri: ${app.services.order}
           predicates:
-            - Path=${app.api-prefix}/order/**
+            - Path=${app.api-prefix}/order/** # Match /api/order/**
           filters:
-            - StripPrefix=1 # Strip /api/order
+            - StripPrefix=2 # Strips /api/order
 
+        # Route requests for the Inventory Service
         - id: inventory-service
-          uri: ${app.services.inventory:http://localhost:8083} # Added default
+          uri: ${app.services.inventory}
           predicates:
-            - Path=${app.api-prefix}/inventory/**
+            - Path=${app.api-prefix}/inventory/** # Match /api/inventory/**
           filters:
-            - StripPrefix=1 # Corrected comment: Strip /api/inventory
+            - StripPrefix=2 # Strips /api/inventory
 
+        # Route requests for the Recombee (Recommendation) Service
         - id: recombee-service
-          uri: ${app.services.recombee:http://localhost:8084} # Added default
+          uri: ${app.services.recombee}
           predicates:
-            - Path=${app.api-prefix}/rec/**
+            # Note: Original path was /api/rec/**, ensure this matches your Recombee controller paths
+            - Path=${app.api-prefix}/recombee-service/** # Match /api/recombee/** (Updated for consistency)
           filters:
-            - StripPrefix=1 # Strip /api/rec
+            - StripPrefix=2 # Strips /api/recombee
 
+        # Route requests for the Search Service
         - id: search-service
-          uri: ${app.services.search:http://localhost:8087} # Added default
+          # Corrected URI reference if SEARCH_HOST points to 8081
+          uri: ${app.services.search} # Should resolve to http://localhost:8081 by default
           predicates:
-            - Path=${app.api-prefix}/search/**
+            - Path=${app.api-prefix}/search-service/** # Match /api/search/**
           filters:
-            - StripPrefix=1 # Strip /api/search
+            - StripPrefix=2 # Strips /api/search
+
