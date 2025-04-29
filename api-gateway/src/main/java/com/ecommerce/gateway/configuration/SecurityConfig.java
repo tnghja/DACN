@@ -25,9 +25,9 @@ public class SecurityConfig {
                         // --- Public endpoints defined in application.yaml will be handled by AuthenticationFilter ---
                         // --- Let AuthenticationFilter handle public path checks based on config ---
                          .pathMatchers("/api/identity/auth/**").permitAll() // Handled by AuthenticationFilter
-                         .pathMatchers("/api/identity/users/register").permitAll() // Handled by AuthenticationFilter
-                         .pathMatchers("/api/product/public/**").permitAll() // Example if public product paths exist - Handled by AuthenticationFilter
-
+                         .pathMatchers("/api/identity/user/create").permitAll() // Example if public product paths exist - Handled by AuthenticationFilter
+                        .pathMatchers("/api/search/**").permitAll()
+                        .pathMatchers("/api/recombee/**").permitAll()
                         // --- Allow OPTIONS requests for CORS preflight ---
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
@@ -50,7 +50,7 @@ public class SecurityConfig {
         // TODO: Restrict allowed origins in production!
         corsConfig.setAllowedOrigins(List.of("*")); // Use List.of for immutable list
         corsConfig.setMaxAge(3600L);
-        corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        corsConfig.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS","PATCH"));
         corsConfig.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-User-Id", "X-User-Roles")); // Allow custom headers
         corsConfig.setExposedHeaders(Arrays.asList("Authorization")); // Expose headers if needed by frontend
 

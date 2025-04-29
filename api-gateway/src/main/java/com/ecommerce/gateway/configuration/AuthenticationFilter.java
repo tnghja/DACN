@@ -30,6 +30,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.ReactiveSecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -41,7 +42,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
     IdentityService identityService;
     ObjectMapper objectMapper;
-
+    AntPathMatcher pathMatcher = new AntPathMatcher();
     @Value("${app.api-prefix}")
     @NonFinal
     private String apiPrefix;
@@ -54,10 +55,19 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     @Value("${app.security.user-paths:}") // Add default ":"
     @NonFinal
     private List<String> configuredUserPublicPaths;
-
+    @Value("${app.security.search-paths:}") // Add default ":"
+    @NonFinal
+    private List<String> configuredSearchPaths;
+    @Value("${app.security.product-paths:}") // Add default ":"
+    @NonFinal
+    private List<String> configuredProductPaths;
+    @Value("${app.security.recombee-paths:}") // Add default ":"
+    @NonFinal
+    private List<String> configuredRecombeePaths;
     @Value("${app.security.password-paths:}") // Add default ":"
     @NonFinal
     private List<String> configuredPasswordPublicPaths;
+
     @Autowired
     public AuthenticationFilter(@Lazy IdentityService identityService, ObjectMapper objectMapper) {
         this.identityService = identityService;
@@ -68,21 +78,34 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     // --- Modify isPublicEndpoint to check BOTH lists ---
     private boolean isPublicEndpoint(ServerHttpRequest request) {
         String path = request.getURI().getPath();
-        log.info(path);
-        // Combine both lists into a single stream for checking
-        Stream<String> allPublicPaths = Stream.concat(
-                Stream.concat(
-                        configuredPublicPaths != null ? configuredPublicPaths.stream() : Stream.empty(),
-                        configuredUserPublicPaths != null ? configuredUserPublicPaths.stream() : Stream.empty()
-                ),
-                configuredPasswordPublicPaths != null ? configuredPasswordPublicPaths.stream() : Stream.empty()
-        );
+        log.debug("Checking if path is public: {}", path);
 
-        // Check if the path matches any pattern in the combined stream
-        boolean isPublic = allPublicPaths.anyMatch(pattern -> pathMatches(path, pattern));
+        // Combine all configured public path lists into a single stream for checking
+        // Use Stream.ofNullable to handle potentially null lists gracefully
+        Stream<String> allPublicPathStream = Stream.of(
+                        configuredProductPaths,
+                        configuredPublicPaths,
+                        configuredUserPublicPaths,
+                        configuredSearchPaths,
+                        configuredRecombeePaths,
+                        configuredPasswordPublicPaths
+                )
+                .filter(list -> list != null && !list.isEmpty())
+                .flatMap(List::stream);
+
+        // 2. **Collect the stream into a List BEFORE any terminal operation**
+        List<String> allPatterns = allPublicPathStream.toList();
+
+
+
+        // Check if the current request path matches any pattern in the combined stream
+        boolean isPublic = allPatterns.stream().anyMatch(pattern -> pathMatcher.match(pattern, path));
+// Use AntPathMatcher
 
         if (isPublic) {
-            log.debug("Path {} matches a configured public/user path pattern.", path);
+            log.info("Path {} matches a configured public path pattern. Bypassing token check.", path);
+        } else {
+            log.debug("Path {} does not match any public path pattern. Proceeding with token check.", path);
         }
         return isPublic;
     }
