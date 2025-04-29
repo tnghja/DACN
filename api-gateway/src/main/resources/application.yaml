@@ -77,7 +77,7 @@ spring:
             # Note: Original path was /api/rec/**, ensure this matches your Recombee controller paths
             - Path=${app.api-prefix}/recombee-service/** # Match /api/recombee/** (Updated for consistency)
           filters:
-            - StripPrefix=2 # Strips /api/recombee
+            - StripPrefix=1 # Strips /api/recombee
 
         # Route requests for the Search Service
         - id: search-service
@@ -86,5 +86,5 @@ spring:
           predicates:
             - Path=${app.api-prefix}/search-service/** # Match /api/search/**
           filters:
-            - StripPrefix=2 # Strips /api/search
+            - StripPrefix=1 # Strips /api/search
 
