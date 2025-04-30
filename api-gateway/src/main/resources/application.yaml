@@ -44,7 +44,7 @@ spring:
             # Corrected: Should strip /identity, not just /api if prefix is /api
             # If api-prefix is /api, StripPrefix=1 removes /api
             # If you want to remove /api/identity, use StripPrefix=2
-            - StripPrefix=2 # Strips /api/identity
+            - StripPrefix=1 # Strips /api/identity
 
         # Route requests for the Product Service
         - id: product-service
@@ -52,7 +52,7 @@ spring:
           predicates:
             - Path=${app.api-prefix}/product/**
           filters:
-            - StripPrefix=2 # Strips /api/product
+            - StripPrefix=1 # Strips /api/product
 
         # Route requests for the Order Service
         - id: order-service
@@ -60,7 +60,7 @@ spring:
           predicates:
             - Path=${app.api-prefix}/order/** # Match /api/order/**
           filters:
-            - StripPrefix=2 # Strips /api/order
+            - StripPrefix=1 # Strips /api/order
 
         # Route requests for the Inventory Service
         - id: inventory-service
@@ -68,7 +68,7 @@ spring:
           predicates:
             - Path=${app.api-prefix}/inventory/** # Match /api/inventory/**
           filters:
-            - StripPrefix=2 # Strips /api/inventory
+            - StripPrefix=1 # Strips /api/inventory
 
         # Route requests for the Recombee (Recommendation) Service
         - id: recombee-service
@@ -77,7 +77,7 @@ spring:
             # Note: Original path was /api/rec/**, ensure this matches your Recombee controller paths
             - Path=${app.api-prefix}/recombee-service/** # Match /api/recombee/** (Updated for consistency)
           filters:
-            - RewritePath=/api/recombee-service/(?<segment>.*), /recombee-service/${segment}
+            - RewritePath=/${app.api-prefix}/recombee-service/(?<segment>.*), /recombee-service/${segment}
 
 
         # Route requests for the Search Service
@@ -87,6 +87,10 @@ spring:
           predicates:
             - Path=${app.api-prefix}/search-service/** # Match /api/search/**
           filters:
-            - RewritePath=/api/search-service/(?<segment>.*), /search-service/${segment}
+            - RewritePath=/${app.api-prefix}/search-service/(?<segment>.*), /search-service/${segment}
 
 
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty.http.client: DEBUG
