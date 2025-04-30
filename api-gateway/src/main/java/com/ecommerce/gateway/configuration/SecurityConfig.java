@@ -1,5 +1,6 @@
 package com.ecommerce.gateway.configuration;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -16,6 +17,8 @@ import java.util.List; // Import List
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
+    @Value("${app.swagger.paths}")
+    private List<String> swaggerPaths;
 
     @Bean
     public SecurityWebFilterChain springSecurityFilterChain(ServerHttpSecurity http) {
@@ -28,6 +31,8 @@ public class SecurityConfig {
                          .pathMatchers("/api/identity/user/create").permitAll() // Example if public product paths exist - Handled by AuthenticationFilter
                         .pathMatchers("/api/search/**").permitAll()
                         .pathMatchers("/api/recombee/**").permitAll()
+                        .pathMatchers(swaggerPaths.toArray(new String[0])).permitAll()
+
                         // --- Allow OPTIONS requests for CORS preflight ---
                         .pathMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 

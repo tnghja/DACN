@@ -67,7 +67,9 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     @Value("${app.security.password-paths:}") // Add default ":"
     @NonFinal
     private List<String> configuredPasswordPublicPaths;
-
+    @Value("${app.swagger.paths}")
+    @NonFinal
+    private List<String> swaggerPaths;
     @Autowired
     public AuthenticationFilter(@Lazy IdentityService identityService, ObjectMapper objectMapper) {
         this.identityService = identityService;
@@ -88,7 +90,8 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
                         configuredUserPublicPaths,
                         configuredSearchPaths,
                         configuredRecombeePaths,
-                        configuredPasswordPublicPaths
+                        configuredPasswordPublicPaths,
+                        swaggerPaths
                 )
                 .filter(list -> list != null && !list.isEmpty())
                 .flatMap(List::stream);

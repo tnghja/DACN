@@ -4,6 +4,8 @@ server:
 # Application specific configuration
 app:
   api-prefix: /api
+  swagger:
+    paths: /api/identity/swagger-ui/**,/api/product/swagger-ui/**,/api/order/swagger-ui/**,/api/inventory/swagger-ui/**,/api/recombee-service/swagger-ui/**,/api/search-service/swagger-ui/**,/identity/v3/api-docs/**,/product/v3/api-docs/**,/order/v3/api-docs/**,/inventory/v3/api-docs/**,/recombee-service/v3/api-docs/**,/search-service/v3/api-docs/**
   services:
     # Define downstream microservice locations with environment variable overrides and defaults
     # Format: ${ENVIRONMENT_VARIABLE_NAME:defaultValue}
@@ -11,7 +13,7 @@ app:
     product : ${PRODUCT_HOST:http://localhost:8088}   # Product service location
     order : ${ORDER_HOST:http://localhost:8082}     # Order service location
     inventory : ${INVENTORY_HOST:http://localhost:8083} # Inventory service location
-    recombee : ${REC_HOST:http://localhost:8084}    # Recombee (recommendation) service location
+    recombee : ${REC_HOST:http://localhost:8081}    # Recombee (recommendation) service location
     search : ${SEARCH_HOST:http://localhost:8081}    # Search service location
   security:
     product-paths:
@@ -26,6 +28,7 @@ app:
       /api/identity/users/create
     password-paths:
       /api/identity/password-reset/**
+
 spring:
   application:
     name: api-gateway # Name of the application
@@ -77,7 +80,7 @@ spring:
             # Note: Original path was /api/rec/**, ensure this matches your Recombee controller paths
             - Path=${app.api-prefix}/recombee-service/** # Match /api/recombee/** (Updated for consistency)
           filters:
-            - RewritePath=/${app.api-prefix}/recombee-service/(?<segment>.*), /recombee-service/${segment}
+            - RewritePath=${app.api-prefix}/recombee-service/(?<segment>.*), /recombee-service/${segment}
 
 
         # Route requests for the Search Service
@@ -87,10 +90,85 @@ spring:
           predicates:
             - Path=${app.api-prefix}/search-service/** # Match /api/search/**
           filters:
-            - RewritePath=/${app.api-prefix}/search-service/(?<segment>.*), /search-service/${segment}
+            - RewritePath=${app.api-prefix}/search-service/(?<segment>.*), /search-service/${segment}
+
+        - id: search-service-swagger
+          uri: ${app.services.search} # Địa chỉ Swagger UI trên server khác
+          predicates:
+            - Path=${app.api-prefix}/search-service/swagger-ui/**
+          filters:
+            - StripPrefix=1
+        - id: identity-service-swagger
+          uri: ${app.services.identity} # Địa chỉ Swagger UI trên server khác
+          predicates:
+            - Path=${app.api-prefix}/identity/swagger-ui/**
+          filters:
+            - StripPrefix=1
+
+        # Swagger UI for Product Service
+        - id: product-service-swagger
+          uri: ${app.services.product} # Địa chỉ Swagger UI trên server khác
+          predicates:
+            - Path=${app.api-prefix}/product/swagger-ui/**
+          filters:
+            - StripPrefix=1
+
+        # Swagger UI for Order Service
+        - id: order-service-swagger
+          uri: ${app.services.order} # Địa chỉ Swagger UI trên server khác
+          predicates:
+            - Path=${app.api-prefix}/order/swagger-ui/**
+          filters:
+            - StripPrefix=1
+
+        # Swagger UI for Inventory Service
+        - id: inventory-service-swagger
+          uri: ${app.services.inventory} # Địa chỉ Swagger UI trên server khác
+          predicates:
+            - Path=${app.api-prefix}/inventory/swagger-ui/**
+          filters:
+            - StripPrefix=1
+
+        # Swagger UI for Recombee Service
+        - id: recombee-service-swagger
+          uri: ${app.services.recombee}  # The base URI of the Recombee service
+          predicates:
+            - Path=${app.api-prefix}/recombee-service/swagger-ui/**
+          filters:
+            - StripPrefix=1
+        - id: identity-service-docs
+          uri: ${app.services.identity}
+          predicates:
+            - Path=/identity/v3/api-docs/**
+
+        - id: product-service-docs
+          uri: ${app.services.product}
+          predicates:
+            - Path=/product/v3/api-docs/**
+
+        - id: order-service-docs
+          uri: ${app.services.order}
+          predicates:
+            - Path=/order/v3/api-docs/**
+
+        - id: inventory-service-docs
+          uri: ${app.services.inventory}
+          predicates:
+            - Path=/inventory/v3/api-docs/**
+
+        - id: recombee-service-docs
+          uri: ${app.services.recombee}
+          predicates:
+            - Path=/recombee-service/v3/api-docs/**
+
+        - id: search-service-docs
+          uri: ${app.services.search}
+          predicates:
+            - Path=/search-service/v3/api-docs/**
 
 
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
     reactor.netty.http.client: DEBUG
+    org.springframework.core.env: DEBUG
