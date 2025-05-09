@@ -17,5 +17,6 @@ public class ProductDTO {
     private Double rate;
     private LocalDateTime deleteAt;
     private Long categoryId;
+    private String categoryName;
     private List<String> imageUrls;
 }

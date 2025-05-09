@@ -10,6 +10,7 @@ import com.ecommerce.product.model.mapper.ProductMapper;
 import com.ecommerce.product.model.request.ImageUploadRequest;
 import com.ecommerce.product.model.request.ProductCreateRequest;
 import com.ecommerce.product.model.request.ProductUpdateRequest;
+import com.ecommerce.product.model.response.ApiResponse;
 import com.ecommerce.product.repository.CategoryRepository;
 import com.ecommerce.product.repository.ProductRepository;
 import com.ecommerce.product.service.CloudinaryService;
@@ -21,6 +22,7 @@ import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -202,6 +204,21 @@ public class ProductServiceImpl implements ProductService {
         productRepository.save(product);
     }
 
-
+    @Override
+    public ApiResponse<List<ProductDTO>> getPaginatedProducts(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ProductDTO> productPage = getAllProducts(pageable);
+        
+        ApiResponse<List<ProductDTO>> response = new ApiResponse<>();
+        response.ok(productPage.getContent());
+        response.setMetadata(Map.of(
+                "currentPage", productPage.getNumber(),
+                "totalItems", productPage.getTotalElements(),
+                "totalPages", productPage.getTotalPages(),
+                "pageSize", productPage.getSize()
+        ));
+        
+        return response;
+    }
 
 }

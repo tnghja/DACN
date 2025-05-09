@@ -34,18 +34,7 @@ public class ProductController {
     public ResponseEntity<ApiResponse<List<ProductDTO>>> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size) {
-        Pageable pageable = PageRequest.of(page, size);
-        Page<ProductDTO> productPage = productService.getAllProducts(pageable);
-
-        ApiResponse<List<ProductDTO>> response = new ApiResponse<>();
-        response.ok(productPage.getContent());
-        response.setMetadata(Map.of(
-                "currentPage", productPage.getNumber(),
-                "totalItems", productPage.getTotalElements(),
-                "totalPages", productPage.getTotalPages(),
-                "pageSize", productPage.getSize()
-        ));
-
+        ApiResponse<List<ProductDTO>> response = productService.getPaginatedProducts(page, size);
         return ResponseEntity.ok(response);
     }
 

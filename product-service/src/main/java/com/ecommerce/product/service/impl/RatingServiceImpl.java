@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,8 +38,11 @@ public RatingCrudResponse createRating(RatingRequest ratingRequest) {
             .orElseThrow(() -> new RuntimeException("Product not found"));
 
     // Ensure the user has an approved order for this product before rating
-    boolean hasApprovedOrder = orderClient.existsByCustomerIdAndOrderItemsProductIdAndStatus(
+    ResponseEntity<Boolean> response = orderClient.existsByCustomerIdAndOrderItemsProductIdAndStatus(
             ratingRequest.getUserId(), ratingRequest.getProductId(), PaymentStatus.APPROVED);
+    
+    // Safely check if response exists and is true
+    boolean hasApprovedOrder = response != null && Boolean.TRUE.equals(response.getBody());
 
     if (!hasApprovedOrder) {
         throw new RuntimeException("Cannot rate this product. You must have an approved order.");

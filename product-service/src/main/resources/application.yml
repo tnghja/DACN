@@ -17,4 +17,4 @@ spring:
 
 app:
   services:
-    order: ${API_GATEWAY_ORDER_HOST:http://localhost:8082}/order
+    order: ${ORDER_HOST:http://36.50.176.187:8089}/order
