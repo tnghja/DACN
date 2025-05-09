@@ -53,7 +53,7 @@ public class InventoryService {
             log.warn("Reservation attempt for already processed orderId: {}. EventId: {}. Skipping.", orderId, eventId);
             return; // Already processed or being processed
         }
-
+        
         log.info("Attempting reservation for orderId: {}, eventId: {}", orderId, eventId);
         LocalDateTime now = LocalDateTime.now();
         LocalDateTime expiryTime = now.plus(RESERVATION_DURATION);
