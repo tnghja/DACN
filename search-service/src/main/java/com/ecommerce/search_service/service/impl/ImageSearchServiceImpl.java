@@ -82,20 +82,18 @@ public class ImageSearchServiceImpl implements ImageSearchService {
     @Override
     public ImageSearchResponse searchByImage(ImageSearchRequest request) {
         String imageHash = ImageHashUtil.hashImage(request.getFile());
-        List<String> cachedProductIds = redisService.getCachedImageSearchResults(imageHash);
 
-        List<String> allProductIds;
-        if (cachedProductIds != null) {
-            allProductIds = cachedProductIds;
-        } else {
-            List<Float> imageVector = extractImageVector(request.getFile());
-            allProductIds = searchSimilarProducts(imageVector);
-            redisService.cacheImageSearchResults(imageHash, allProductIds);
-        }
+        List<Float> imageVector = extractImageVector(request.getFile());
+        List<String> allProductIds = searchSimilarProducts(imageVector);
+        redisService.cacheImageSearchResults(imageHash, allProductIds);
+
 
 // Xử lý phân trang an toàn
         int startIdx = (request.getPage() - 1) * request.getPageSize();
         int endIdx = Math.min(startIdx + request.getPageSize(), allProductIds.size());
+        if (startIdx >= allProductIds.size()) {
+            return new ImageSearchResponse(imageHash, List.of(), Map.of());
+        }
         List<String> paginatedProductIds = allProductIds.subList(startIdx, endIdx);
 
 // Truy vấn Elasticsearch
@@ -126,7 +124,9 @@ public class ImageSearchServiceImpl implements ImageSearchService {
         // Áp dụng phân trang
         int startIdx = (request.getPage() - 1) * request.getPageSize();
         int endIdx = Math.min(startIdx + request.getPageSize(), allProductIds.size());
-
+        if (startIdx >= allProductIds.size()) {
+            return new ImageSearchResponse(request.getImageHash(), List.of(), Map.of());
+        }
         List<String> paginatedProductIds = allProductIds.subList(startIdx, endIdx);
 
         // Truy vấn Elasticsearch để lấy thông tin sản phẩm
