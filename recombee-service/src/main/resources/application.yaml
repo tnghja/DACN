@@ -3,8 +3,8 @@ server:
   servlet:
     context-path: /recombee-service
 recombee:
-  database-id: ${RECOMBEE_DB_ID:dacn-dev}
-  private-token: ${RECOMBEE_TOKEN:aG1RT8xXEINqWHlONh1PqDZYkLu8qV1oXe8mjRFIQaE0GC7WgD4gjSTmW6TOYIh2}
+  database-id: ${RECOMBEE_DB_ID}
+  private-token: ${RECOMBEE_TOKEN}
 
 spring:
   autoconfigure:
