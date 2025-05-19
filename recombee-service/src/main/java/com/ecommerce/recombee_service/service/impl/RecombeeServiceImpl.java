@@ -59,7 +59,7 @@ public class RecombeeServiceImpl implements RecombeeService {
             List<Request> batch = new ArrayList<>();
             
             for (String itemId : requests.getItemIds()) {
-                batch.add(new AddDetailView(requests.getUserId(), itemId)
+                batch.add(new AddPurchase(requests.getUserId(), itemId)
                         .setCascadeCreate(true));
             }
 

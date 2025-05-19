@@ -23,6 +23,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.ecommerce.search_service.constants.SortConstants.AVAILABLE_SORT_FIELDS;
@@ -137,8 +140,15 @@ public class SearchServiceImpl implements SearchService {
         if (productIds == null || productIds.isEmpty()) {
             return Collections.emptyList();
         }
-        Iterable<ProductDocument> result = productElasticsearchRepository.findAllById(productIds);
-        return Lists.newArrayList(result);
+        List<ProductDocument> products = Lists.newArrayList(productElasticsearchRepository.findAllById(productIds));
+
+        Map<String, ProductDocument> productMap = products.stream()
+                .collect(Collectors.toMap(ProductDocument::getId, Function.identity()));
+
+        return productIds.stream()
+                .map(productMap::get)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     @Override

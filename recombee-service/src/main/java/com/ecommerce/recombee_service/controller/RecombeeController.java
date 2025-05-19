@@ -59,6 +59,7 @@ public class RecombeeController {
 
     @PostMapping("/batch-purchase")
     public ResponseEntity<ApiResponse<Void>> batchPurchase(@Valid @RequestBody InteractionBatchRequest requests) {
+        System.out.println("Received: " + requests);
         recombeeService.sendBatchInteractions(requests);
         ApiResponse<Void> response = new ApiResponse<>();
         response.ok();
