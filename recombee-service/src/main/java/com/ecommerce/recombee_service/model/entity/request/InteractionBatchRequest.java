@@ -1,7 +1,7 @@
 package com.ecommerce.recombee_service.model.entity.request;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
@@ -11,10 +11,9 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class InteractionBatchRequest {
+    @NotNull(message = "userId is required")
     @NotBlank(message = "userId is required")
-    @JsonProperty("userId")
     private String userId;
-    @Size(min = 1, message = "itemIds is required")
-    @JsonProperty("itemIds")
+    @Size(min = 1, message = "itemIds are required")
     private List<String> itemIds;
 }

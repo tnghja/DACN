@@ -6,20 +6,21 @@ import com.ecommerce.recombee_service.model.entity.request.InteractionRequest;
 import com.ecommerce.recombee_service.model.response.ApiResponse;
 import com.ecommerce.recombee_service.service.RecombeeService;
 import com.recombee.api_client.api_requests.RecommendItemsToItem;
-import com.recombee.api_client.api_requests.SearchItems;
 import com.recombee.api_client.bindings.Recommendation;
 import com.recombee.api_client.bindings.RecommendationResponse;
-import com.recombee.api_client.bindings.SearchResponse;
 import com.recombee.api_client.exceptions.ApiException;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import org.springframework.web.bind.annotation.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
@@ -58,7 +59,7 @@ public class RecombeeController {
     }
 
     @PostMapping("/batch-purchase")
-    public ResponseEntity<ApiResponse<Void>> batchPurchase(@Valid @RequestBody InteractionBatchRequest requests) {
+    public ResponseEntity<ApiResponse<Void>> sendBatchPurchase(@Valid @RequestBody InteractionBatchRequest requests) {
         System.out.println("Received: " + requests);
         recombeeService.sendBatchInteractions(requests);
         ApiResponse<Void> response = new ApiResponse<>();
@@ -76,9 +77,9 @@ public class RecombeeController {
         response.ok(recommendations);
         return ResponseEntity.ok(response);
     }
-    
+
     // Endpoints for non-signed-in users
-    
+
     @GetMapping("/popular")
     @Operation(summary = "Get popular items for non-signed-in users")
     public ResponseEntity<ApiResponse<Object>> getPopularItems(
@@ -88,7 +89,7 @@ public class RecombeeController {
         response.ok(recommendations);
         return ResponseEntity.ok(response);
     }
-    
+
     @GetMapping("/new-items")
     @Operation(summary = "Get new items for non-signed-in users")
     public ResponseEntity<ApiResponse<Object>> getNewItems(
@@ -98,7 +99,7 @@ public class RecombeeController {
         response.ok(recommendations);
         return ResponseEntity.ok(response);
     }
-    
+
     @GetMapping("/featured")
     @Operation(summary = "Get featured items for non-signed-in users")
     public ResponseEntity<ApiResponse<Object>> getFeaturedItems(
@@ -108,15 +109,15 @@ public class RecombeeController {
         response.ok(recommendations);
         return ResponseEntity.ok(response);
     }
-    
+
     @PostMapping("/context-based")
     @Operation(summary = "Get recommendations based on browsing context for non-signed-in users")
     public ResponseEntity<ApiResponse<Object>> getContextBasedRecommendations(
             @Valid @RequestBody ContextRequest context,
             @RequestParam(defaultValue = "5") int count) {
         var recommendations = recombeeService.getItemsBasedOnContext(
-                context.getRecentlyViewedItems(), 
-                context.getCategories(), 
+                context.getRecentlyViewedItems(),
+                context.getCategories(),
                 count);
         ApiResponse<Object> response = new ApiResponse<>();
         response.ok(recommendations);
@@ -134,20 +135,20 @@ public class RecombeeController {
             // Create request for item-to-item recommendations
             RecommendItemsToItem request = new RecommendItemsToItem(itemId, userId, count)
                     .setCascadeCreate(true);
-            
+
             // Apply optional filter
             if (filter != null && !filter.trim().isEmpty()) {
                 request.setFilter(filter);
             }
-            
+
             // Send request and get response
             RecommendationResponse response = recombeeService.getClient().send(request);
-            
+
             // Extract item IDs from recommendations
             List<String> similarItems = List.of(response.getRecomms()).stream()
                     .map(Recommendation::getId)
                     .collect(Collectors.toList());
-            
+
             // Return successful response
             ApiResponse<Object> apiResponse = new ApiResponse<>();
             apiResponse.ok(similarItems);
