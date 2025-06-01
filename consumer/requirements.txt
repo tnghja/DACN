@@ -1,0 +1,5 @@
+confluent-kafka
+pinecone
+requests
+fastapi
+uvicorn

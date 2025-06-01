@@ -5,23 +5,42 @@ version: '3.8'
 volumes:
   postgres_data:
     name: imagesearch_postgres_data
-  es_data:
+  es_secure_data:
     driver: local
+  nginx_certs:
+    name: nginx
 
 services:
-  # ================= INFRA =================
-
+  nginx:
+    image: nginx:rollback
+    container_name: nginx-https
+    ports:
+      - "4443:443"   # Use 4443 for HTTPS
+      - "8890:80"    # Use 8890 for HTTP
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+    depends_on:
+      - api-gateway
+    networks:
+      - microservice-network
   zookeeper:
-    image: confluentinc/cp-zookeeper:latest
+
+    image: cp-zookeeper:rollback
     container_name: zookeeper
     restart: always
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
     networks:
       - microservice-network
-
+    healthcheck:
+      test: [ "CMD", "bash", "-c", "echo ruok | nc -w 2 localhost 2181 | grep imok" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: cp-kafka:rollback
     container_name: kafka
     restart: always
     depends_on:
@@ -39,7 +58,12 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     networks:
       - microservice-network
-
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "9092" ]
+      interval: 30s
+      retries: 3
+      start_period: 20s
+      timeout: 10s
   kafka-ui:
     image: provectuslabs/kafka-ui
     container_name: kafka-ui
@@ -53,7 +77,12 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: "kafka:29092"
     networks:
       - microservice-network
-
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
   kafka-connect:
     image: debezium/connect:3.0.0.Final
     container_name: kafka-connect
@@ -76,9 +105,15 @@ services:
       - ./kafka-connect-plugins:/kafka/connect
     networks:
       - microservice-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8083" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   postgres:
-    image: postgres:15
+    image: postgres:rollback
     container_name: postgres
     restart: always
     ports:
@@ -93,36 +128,50 @@ services:
       postgres -c wal_level=logical -c max_replication_slots=5 -c max_wal_senders=5
     networks:
       - microservice-network
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      interval: 30s
+      retries: 3
+      start_period: 20s
+      timeout: 10s
   elasticsearch:
     image: elasticsearch:8.17.5
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
-      - xpack.security.enabled=false
+      - xpack.security.enabled=true
+      - xpack.security.authc.token.enabled=true
+      - ELASTIC_PASSWORD=qweriuhjkasfy8912k1h@alk  # ✅ đặt mật khẩu ở đây
       - xpack.security.transport.ssl.enabled=false
       - xpack.security.http.ssl.enabled=false
       - xpack.ml.enabled=false
       - xpack.watcher.enabled=false
       - xpack.monitoring.collection.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    volumes:
-      - es_data:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
-      - "9300:9300"
+      - "9300"
     networks:
       - microservice-network
     restart: always
-    
-    #  kibana:
-    #    image: docker.elastic.co/kibana/kibana:8.11.3
-    #    container_name: kibana
-    #    ports:
-    #      - "5601:5601"
-    #    environment:
-    #      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
-    #    depends_on:
-    #      - elasticsearch
+    volumes:
+      - es_secure_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -u elastic:qweriuhjkasfy8912k1h@alk -s http://localhost:9200/_cluster/health | grep -q '\"status\":\"green\"' || exit 1" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+#  kibana:
+#    image: docker.elastic.co/kibana/kibana:8.11.3
+#    container_name: kibana
+#    ports:
+#      - "5601:5601"
+#    environment:
+#      ELASTICSEARCH_HOSTS: http://elasticsearch:9200
+#    depends_on:
+#      - elasticsearch
 
     # ================= SERVICES =================
   extract-model:
@@ -132,6 +181,12 @@ services:
       - "8000:8000"
     networks:
       - microservice-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000" ] # Basic HTTP check; replace with specific endpoint if available
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   consumer-images:
     image: dinhthai/consumer-images:1.1
@@ -144,9 +199,15 @@ services:
       - ./service-env/.env_consumer
     networks:
       - microservice-network
+    healthcheck:
+      test: [ "CMD", "nc", "-z", "localhost", "8080" ] # Port check since no /health endpoint
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   search-service:
-    image: dinhthai/search-service:1.2
+    image: dinhthai/search-service:1.7
     container_name: search-service
     depends_on:
       - postgres
@@ -157,9 +218,15 @@ services:
       - ./service-env/.env_search-service
     networks:
       - microservice-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081" ] # Basic HTTP check; replace with specific endpoint if available
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   recombee-service:
-    image: dinhthai/recombee-service:1.1
+    image: dinhthai/recombee-service:1.5
     container_name: recombee-service
     ports:
       - "3001:8081"
@@ -167,17 +234,23 @@ services:
       - ./service-env/.env_recombee-service
     networks:
       - microservice-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081" ] # Basic HTTP check; replace with specific endpoint if available
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
   api-gateway:
-    image: dinhthai/api-gateway:1.4
+    image: tnghja/api-gateway:1.8
     container_name: api-gateway-container
     ports:
       - "${EX_API_GATEWAY_PORT}:${API_GATEWAY_PORT}" # <-- Set in .env (e.g. 8888)
-    depends_on:
-      - identity-service
-      - inventory-service
-      - order-service
-      - product-service
+#    depends_on:
+#      - identity-service
+#      - inventory-service
+#      - order-service
+#      - product-service
     restart: always
     environment:
       IDENTITY_HOST: ${API_GATEWAY_IDENTITY_HOST}
@@ -188,9 +261,14 @@ services:
       REC_HOST: ${API_GATEWAY_REC_HOST}
     networks:
       - microservice-network
-
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:${API_GATEWAY_PORT}" ] # Basic HTTP check
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
   identity-service:
-    image: tnghja/identity-service:1.0
+    image: tnghja/identity-service:1.5
     container_name: identity-service-container
     expose:
       - "${IDENTITY_PORT}"
@@ -202,12 +280,17 @@ services:
       DB_URL: ${IDENTITY_DB_URL}
       DB_USERNAME: ${IDENTITY_DB_USERNAME}
       DB_PASSWORD: ${IDENTITY_DB_PASSWORD}
-      BACKEND_HOST: ${API_GATEWAY_HOST}
+      BACKEND_HOST: ${API_GATEWAY_HOST}/identity
     networks:
       - microservice-network
-
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:${IDENTITY_PORT}" ] # Basic HTTP check
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
   inventory-service:
-    image: tnghja/inventory-service:1.0
+    image: tnghja/inventory-service:1.1
     container_name: inventory-service-container
     expose:
       - "${INVENTORY_PORT}"
@@ -222,9 +305,14 @@ services:
       KAFKA_HOST: ${KAFKA_HOST}
     networks:
       - microservice-network
-
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:${INVENTORY_PORT}" ] # Basic HTTP check
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
   order-service:
-    image: tnghja/order-service:1.0
+    image: tnghja/order-service:1.8
     container_name: order-service-container
     expose:
       - "${ORDER_PORT}"
@@ -237,11 +325,18 @@ services:
       DB_USERNAME: ${ORDER_DB_USERNAME}
       DB_PASSWORD: ${ORDER_DB_PASSWORD}
       KAFKA_HOST: ${KAFKA_HOST}
+      BACKEND_HOST: "http://${HOST_IP}:${EX_ORDER_PORT}"
+      FE_HOST: "${PRODUCT_FE_HOST}"
     networks:
       - microservice-network
-
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:${ORDER_PORT}" ] # Basic HTTP check
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
   product-service:
-    image: tnghja/product-service:1.0
+    image: tnghja/product-service:1.6
     container_name: product-service-container
     expose:
       - "${PRODUCT_PORT}"
@@ -254,12 +349,19 @@ services:
       DB_USERNAME: ${PRODUCT_DB_USERNAME}
       DB_PASSWORD: ${PRODUCT_DB_PASSWORD}
       FE_HOST: ${PRODUCT_FE_HOST}
+      ORDER_HOST: "http://order-service:${ORDER_PORT}"
+      KAFKA_HOST : ${KAFKA_HOST}
     networks:
       - microservice-network
-
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:${PRODUCT_PORT}" ] # Basic HTTP check
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 networks:
   microservice-network: # Define a custom network for the services
     driver: bridge
 
-    
+
 
