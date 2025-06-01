@@ -9,4 +9,6 @@ public interface RedisService {
 
     // Lấy danh sách product_id từ Redis
     public List<String> getCachedImageSearchResults(String imageHash);
+
+    void invalidateAllCache(); // Thêm dòng này
 }

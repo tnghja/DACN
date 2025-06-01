@@ -82,10 +82,16 @@ public class ImageSearchServiceImpl implements ImageSearchService {
     @Override
     public ImageSearchResponse searchByImage(ImageSearchRequest request) {
         String imageHash = ImageHashUtil.hashImage(request.getFile());
+        List<String> cachedProductIds = redisService.getCachedImageSearchResults(imageHash);
 
-        List<Float> imageVector = extractImageVector(request.getFile());
-        List<String> allProductIds = searchSimilarProducts(imageVector);
-        redisService.cacheImageSearchResults(imageHash, allProductIds);
+        List<String> allProductIds;
+        if (cachedProductIds != null) {
+            allProductIds = cachedProductIds;
+        } else {
+            List<Float> imageVector = extractImageVector(request.getFile());
+            allProductIds = searchSimilarProducts(imageVector);
+            redisService.cacheImageSearchResults(imageHash, allProductIds);
+        }
 
 
 // Xử lý phân trang an toàn

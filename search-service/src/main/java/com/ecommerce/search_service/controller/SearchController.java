@@ -11,6 +11,7 @@ import com.ecommerce.search_service.model.response.ApiResponse;
 import com.ecommerce.search_service.model.response.ImageSearchResponse;
 import com.ecommerce.search_service.model.response.ProductResponse;
 import com.ecommerce.search_service.service.ImageSearchService;
+import com.ecommerce.search_service.service.RedisService;
 import com.ecommerce.search_service.service.SearchService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
@@ -43,7 +44,8 @@ public class SearchController {
     SearchService searchService;
     @Autowired
     ImageSearchService imageSearchService;
-
+    @Autowired
+    RedisService redisService;
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<ProductResponse>>> searchProducts(
             @RequestParam(required = false) String name,
@@ -165,5 +167,12 @@ public class SearchController {
 
         return ResponseEntity.ok(response);
     }
+    @DeleteMapping("/image-search/cache")
+    public ResponseEntity<ApiResponse<String>> invalidateImageSearchCache() {
+        redisService.invalidateAllCache();
 
+        ApiResponse<String> response = new ApiResponse<>();
+        response.ok("All image search cache invalidated successfully.");
+        return ResponseEntity.ok(response);
+    }
 }

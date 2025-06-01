@@ -2,6 +2,8 @@ package com.ecommerce.search_service.service.impl;
 
 import com.ecommerce.search_service.service.RedisService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
@@ -36,5 +38,18 @@ public class RedisServiceImpl implements RedisService {
 
         // Deserialize from comma-separated string
         return cachedData != null ? Arrays.asList(cachedData.split(",")) : null;
+    }
+
+    @Override
+    public void invalidateAllCache() {
+        String pattern = REDIS_PREFIX + "*";
+        ScanOptions options = ScanOptions.scanOptions().match(pattern).count(1000).build();
+
+        try (Cursor<byte[]> cursor = redisTemplate.getConnectionFactory().getConnection().scan(options)) {
+            while (cursor.hasNext()) {
+                byte[] key = cursor.next();
+                redisTemplate.delete(new String(key));
+            }
+        }
     }
 }
